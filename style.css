@@ -1,0 +1,51 @@
+:root {
+  --primary-red: #ff4d4d;
+  --dark-red: #b30000;
+}
+
+body {
+  background: #000;
+  color: white;
+  overflow-x: hidden; /* Prevents side-scrolling on mobile */
+}
+
+/* Fix the massive text for Mobile */
+.tejinder h2 {
+  margin: 0;
+  padding: 0;
+  text-transform: uppercase;
+  font-size: clamp(3rem, 15vw, 10rem); /* Dynamically scales between 3rem and 10rem */
+  color: var(--primary-red);
+  text-align: center;
+}
+
+button {
+  border: 2px solid var(--primary-red);
+  color: var(--primary-red);
+  cursor: pointer;
+}
+
+button::before {
+  background: var(--primary-red);
+}
+
+/* Section styling */
+.content-section {
+  padding: 100px 20px;
+  max-width: 900px;
+  margin: 0 auto;
+  min-height: 50vh;
+}
+
+.buttonC {
+  display: flex;
+  flex-wrap: wrap; /* Allows buttons to stack on small phones */
+  justify-content: center;
+  gap: 10px;
+}
+
+/* Ensure waves stay at bottom/top */
+.flip-upside-down {
+  transform: rotateX(180deg);
+  z-index: -1;
+}
