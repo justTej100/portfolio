@@ -1,18 +1,11 @@
+@import url(//fonts.googleapis.com/css?family=Lato:300:400);
+
 html {
   height: 100%;
 }
 
-
-      .flip-upside-down {
-        transform: rotateX(180deg);
-        position: fixed;
-			  top: 0;
-			  width: 100%;
-      }
-
-
 body {
-  font-family: Arial, Helvetica, sans-serif;;
+  font-family: Arial, Helvetica, sans-serif;
   height: 100%;
   width: 100%;
   margin: 0;
@@ -20,16 +13,9 @@ body {
   display: flex;
   flex-direction: column;
   min-height: 100%;
-  background: rgb(255, 255, 255);
+  background: #fff;
 }
 
-
-
-
-
-
-
-/* Main styles */
 main {
   max-width: 800px;
   margin: 0 auto;
@@ -37,42 +23,95 @@ main {
   flex-grow: 1;
 }
 
-
-
-
-
-
-
-
-@import url(//fonts.googleapis.com/css?family=Lato:300:400);
-
-
-
-.header {
-  position:relative;
-  text-align:center;
-  color:rgb(255, 8, 8);
+/* ── Name canvas ── */
+#nameCanvas {
+  display: block;
+  margin: 0 auto;
+  cursor: pointer;
+  max-width: 100%;
+  width: 100%;
 }
 
+/* ── Centered name block ── */
+.tejinder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+}
 
+/* ── Buttons ── */
+.buttonC {
+  display: flex;
+  justify-content: center;
+  margin-top: 24px;
+}
 
+button {
+  margin-left: 10px;
+  padding: 0.8em 2em;
+  border: 2px solid #000;
+  position: relative;
+  overflow: hidden;
+  background-color: transparent;
+  text-align: center;
+  text-transform: uppercase;
+  font-size: 16px;
+  transition: .3s;
+  z-index: 1;
+  font-family: inherit;
+  color: #000;
+  cursor: pointer;
+}
 
+button::before {
+  content: '';
+  width: 0;
+  height: 300%;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(45deg);
+  background: #000;
+  transition: .5s ease;
+  display: block;
+  z-index: -1;
+}
+
+button:hover::before {
+  width: 105%;
+}
+
+button:hover {
+  color: #fff;
+}
+
+/* ── Waves ── */
+.waves-wrap {
+  width: 100%;
+  position: relative;
+}
 
 .waves {
-  position:relative;
+  position: relative;
   width: 100%;
-  height:25vh;
-  margin-bottom:-7px; /*Fix for safari gap*/
-  min-height:100px;
-  max-height:150px;
+  height: 25vh;
+  margin-bottom: -7px;
+  min-height: 100px;
+  max-height: 150px;
 }
 
+.flip-upside-down {
+  transform: rotateX(180deg);
+  position: fixed;
+  top: 0;
+  width: 100%;
+}
 
-
-/* Animation */
-
+/* ── Wave animation ── */
 .parallax > use {
-  animation: move-forever 25s cubic-bezier(.55,.5,.45,.5)     infinite;
+  animation: move-forever 25s cubic-bezier(.55,.5,.45,.5) infinite;
 }
 .parallax > use:nth-child(1) {
   animation-delay: -2s;
@@ -90,91 +129,19 @@ main {
   animation-delay: -5s;
   animation-duration: 20s;
 }
+
 @keyframes move-forever {
-  0% {
-   transform: translate3d(-90px,0,0);
-  }
-  100% { 
-    transform: translate3d(85px,0,0);
-  }
+  0%   { transform: translate3d(-90px,0,0); }
+  100% { transform: translate3d(85px,0,0); }
 }
-/*Shrinking for mobile*/
+
+/* ── Mobile ── */
 @media (max-width: 768px) {
   .waves {
-    height:40px;
-    min-height:40px;
-  }
-  .content {
-    height:30vh;
+    height: 40px;
+    min-height: 40px;
   }
   h1 {
-    font-size:24px;
+    font-size: 24px;
   }
 }
-
-
-.tejinder{
-	position: absolute;
-	top: 50%;
-	left: 50%;
-	-webkit-transform: translate(-50%,-50%);
-	   -moz-transform: translate(-50%,-50%);
-	    -ms-transform: translate(-50%,-50%);
-	     -o-transform: translate(-50%,-50%);
-	        transform: translate(-50%,-50%);
-}
-
-.tejinder h2{
-	margin: 0;
-	padding: 0;
-	text-transform: uppercase;
-	font-size: 10em;
-	color: #000000;
-
-}
-
-
-
-.buttonC {
-  display: flex;
-  justify-content: center;
-}
-
-button {
-  margin-left: 10px;
-  padding: 0.8em 2em;
-  border: 2px solid #8a6adb;
-  position: relative;
-  overflow: hidden;
-  background-color: transparent;
-  text-align: center;
-  text-transform: uppercase;
-  font-size: 16px;
-  transition: .3s;
-  z-index: 1;
-  font-family: inherit;
-  color: #8a6adb;
- }
- 
- button::before {
-  content: '';
-  width: 0;
-  height: 300%;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(45deg);
-  background: #8a6adb;
-  transition: .5s ease;
-  display: block;
-  z-index: -1;
- }
- 
- button:hover::before {
-  width: 105%;
- }
- 
- button:hover {
-  color: #ffffff;
- }
- 
