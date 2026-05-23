@@ -48,6 +48,10 @@ function computeSharedBigSize() {
 }
 computeSharedBigSize();
 
+// ── Neon colour palette ──
+const NEON = ['#ff0080','#00ffff','#ff6600','#00ff44','#cc00ff','#ffee00','#ff2200','#0055ff'];
+function randNeon() { return NEON[Math.floor(Math.random() * NEON.length)]; }
+
 /**
  * Draw the two overlapping text layers that produce the logo/name effect.
  * A large vertically-stretched serif layer sits behind a smaller Impact layer,
@@ -175,28 +179,27 @@ function randomBolt(intensity) {
 }
 
 /**
- * Draw glitch slices of text with randomised horizontal/vertical offsets and
- * occasional red or blue colour tints to simulate chromatic channel corruption.
+ * Draw neon glitch slices — each strip is a different colour from the NEON
+ * palette, with a matching shadowBlur glow, displaced by a random offset.
  * @param {string} text
  * @param {number} t - Intensity 0..1.
- * @param {number} [baseAlpha=0.92] - Opacity of each slice.
+ * @param {number} [baseAlpha=0.92]
  */
 function drawGlitch(text, t, baseAlpha = 0.92) {
   const { W, H } = dims;
-  const slices = 8 + Math.floor(Math.random() * 14);
+  const slices = 10 + Math.floor(Math.random() * 18);
   for (let i = 0; i < slices; i++) {
     const sy  = Math.random() * H;
-    const sh  = 1 + Math.random() * BIG * (0.06 + 0.28 * t);
-    const ox  = (Math.random() - 0.5) * 58 * t;
-    const oy  = (Math.random() - 0.5) * 5  * t;
-    const rnd = Math.random();
-    const col = rnd < 0.18 ? '#cc0000' : rnd < 0.34 ? '#1122cc' : '#000000';
-    const sm  = col === '#000000' ? '#444' : col;
+    const sh  = 1 + Math.random() * BIG * (0.06 + 0.34 * t);
+    const ox  = (Math.random() - 0.5) * 72 * t;
+    const oy  = (Math.random() - 0.5) * 7  * t;
+    const col = Math.random() < 0.75 ? randNeon() : '#000';
     ctx.save();
-    ctx.beginPath();
-    ctx.rect(0, sy, W, sh);
-    ctx.clip();
-    drawBase(text, ox, oy, col, sm, baseAlpha);
+    ctx.shadowColor = col;
+    ctx.shadowBlur  = t * 14;
+    ctx.beginPath(); ctx.rect(0, sy, W, sh); ctx.clip();
+    drawBase(text, ox, oy, col, col, baseAlpha);
+    ctx.shadowBlur = 0;
     ctx.restore();
   }
 }
@@ -228,31 +231,36 @@ function renderIdleFrame(text) {
   ctx.fillText(text, cx, cy / 1.55);
   ctx.restore();
 
-  // Subtle pulsing chroma shift on the small layer
-  const pulse  = Math.sin(idleFrame * 0.035) * 0.5 + 0.5;
-  const shift  = Math.round(1.2 + pulse * 2.8);
+  // Neon colour-cycling chroma on the small layer
+  const t      = idleFrame * 0.032;
+  const pulse  = Math.sin(t) * 0.5 + 0.5;
+  const shift  = Math.round(1.4 + pulse * 3.2);
+  const colA   = NEON[Math.floor(t * 0.4) % NEON.length];
+  const colB   = NEON[(Math.floor(t * 0.4) + 4) % NEON.length];
   ctx.font = `900 ${small}px Impact, sans-serif`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
-  ctx.globalAlpha = 0.38;
-  ctx.fillStyle = '#cc0000'; ctx.fillText(text, cx - shift, smallY);
-  ctx.fillStyle = '#0011cc'; ctx.fillText(text, cx + shift, smallY);
-  ctx.globalAlpha = 1;
+  ctx.globalAlpha = 0.42;
+  ctx.shadowColor = colA; ctx.shadowBlur = 6;
+  ctx.fillStyle = colA; ctx.fillText(text, cx - shift, smallY);
+  ctx.shadowColor = colB;
+  ctx.fillStyle = colB; ctx.fillText(text, cx + shift, smallY);
+  ctx.shadowBlur = 0; ctx.globalAlpha = 1;
 
-  // Occasional random glitch slice (4 % chance per frame ≈ every ~1.7 s at 60 fps)
-  if (Math.random() < 0.04) {
-    const sy = smallY - small + Math.random() * small * 2;
-    const sh = 2 + Math.random() * 7;
-    const ox = (Math.random() - 0.5) * 14;
+  // Neon glitch slice (8 % chance per frame)
+  if (Math.random() < 0.08) {
+    const sy  = smallY - small + Math.random() * small * 2.2;
+    const sh  = 1 + Math.random() * 9;
+    const ox  = (Math.random() - 0.5) * 20;
+    const col = randNeon();
     ctx.save();
     ctx.beginPath(); ctx.rect(0, sy, W, sh); ctx.clip();
     ctx.font = `900 ${small}px Impact, sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.globalAlpha = 0.85;
-    ctx.fillStyle = Math.random() < 0.5 ? '#cc0000' : '#0011cc';
-    ctx.fillText(text, cx + ox, smallY);
-    ctx.globalAlpha = 1;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.9;
+    ctx.shadowColor = col; ctx.shadowBlur = 10;
+    ctx.fillStyle = col; ctx.fillText(text, cx + ox, smallY);
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
     ctx.restore();
   }
 
@@ -288,112 +296,136 @@ function renderIdle(text) {
 }
 
 /**
- * Render a chaotic glitch transition — white background throughout.
- * Layers (all intensity-gated by a sin bell curve):
- *  1. Triple RGB chromatic aberration (R left, B right, G up)
- *  2. fromText corrupting out with heavy slice displacement
- *  3. toText phasing in, also corrupted
- *  4. Inversion strips — black bars with white text punched through
- *  5. VHS displacement bars (extreme lateral shift)
- *  6. Ghost echo copies at random offsets
- *  7. Digital noise blocks (red / blue / grey rectangles)
- *  8. Scanline noise with coloured lines
+ * Absolutely unhinged neon glitch transition — white background, 8-colour
+ * palette used across every effect simultaneously.
+ *
+ *  1. Neon background tint flash
+ *  2. 8-way chromatic star (one copy of text per NEON colour, all 8 directions)
+ *  3. Skewed ghost layers (ctx.transform warp + neon colour)
+ *  4. Neon glitch slices (drawGlitch — 75 % chance each slice is neon)
+ *  5. fromText fading out / toText fading in
+ *  6. Neon inversion strips (black band + glowing neon text inside)
+ *  7. VHS bars with neon colours + glow
+ *  8. 6 ghost echo copies in random neon colours
+ *  9. Neon pixel explosion (up to 80 rectangles at peak)
+ * 10. Rainbow scanlines
  */
 function renderTransition(fromText, toText, progress) {
   const { W, H } = dims;
-
-  ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, W, H);
-
   const bell       = Math.sin(progress * Math.PI);
   const bellSq     = bell * bell;
+  const bellCu     = bellSq * bell;
   const activeText = progress < 0.5 ? fromText : toText;
 
-  // ── 1. Triple chromatic aberration ──
-  const chromaShift = Math.round(bell * 52);
-  if (chromaShift > 0) {
-    ctx.globalAlpha = bell * 0.58;
-    drawBase(activeText, -chromaShift,                  0, '#dd0000', '#dd0000', 1);
-    drawBase(activeText,  chromaShift,                  0, '#0011cc', '#0011cc', 1);
-    drawBase(activeText,  0,          -Math.round(bell * 10), '#008800', '#008800', 1);
+  // ── 1. White base + neon background tint at peak ──
+  ctx.fillStyle = '#fff';
+  ctx.fillRect(0, 0, W, H);
+  if (bell > 0.65) {
+    ctx.globalAlpha = (bell - 0.65) / 0.35 * 0.15;
+    ctx.fillStyle = randNeon();
+    ctx.fillRect(0, 0, W, H);
     ctx.globalAlpha = 1;
   }
 
-  // ── 2. fromText glitching out ──
-  if (progress < 0.65) {
-    const t     = Math.min(progress / 0.55, 1);
-    const alpha = 1 - t * 0.94;
-    drawGlitch(fromText, t, 0.92);
-    drawBase(fromText, 0, 0, '#000', '#000', alpha);
+  // ── 2. 8-way neon chromatic star ──
+  const chromaR = Math.round(bell * 50);
+  if (chromaR > 0) {
+    ctx.globalAlpha = bell * 0.50;
+    for (let i = 0; i < 8; i++) {
+      const ang = i * Math.PI / 4;
+      const dx  = Math.round(Math.cos(ang) * chromaR);
+      const dy  = Math.round(Math.sin(ang) * chromaR * 0.22);
+      ctx.shadowColor = NEON[i]; ctx.shadowBlur = 10 + bell * 18;
+      drawBase(activeText, dx, dy, NEON[i], NEON[i], 1);
+    }
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
   }
 
-  // ── 3. toText glitching in ──
-  if (progress > 0.35) {
-    const t      = Math.min((progress - 0.35) / 0.55, 1);
-    const corrupt = 1 - t;
-    drawGlitch(toText, corrupt, 0.92);
-    drawBase(toText, 0, 0, '#000', '#000', t);
+  // ── 3. Skewed warp ghost layers ──
+  if (bell > 0.28) {
+    for (let s = 0; s < 4; s++) {
+      const skX = (Math.random() - 0.5) * 0.18 * bell;
+      const skY = (Math.random() - 0.5) * 0.09 * bell;
+      const dx  = (Math.random() - 0.5) * 36 * bell;
+      const col = randNeon();
+      ctx.save();
+      ctx.transform(1, skY, skX, 1, 0, 0);
+      ctx.globalAlpha = bell * 0.20;
+      ctx.shadowColor = col; ctx.shadowBlur = 14;
+      drawBase(activeText, dx, 0, col, col, 1);
+      ctx.shadowBlur = 0; ctx.globalAlpha = 1;
+      ctx.restore();
+    }
   }
 
-  // ── 4. Inversion strips (black band, white text inside) ──
-  const numInvert = Math.floor(bellSq * 4);
+  // ── 4. Neon glitch slices ──
+  if (progress < 0.65) drawGlitch(fromText, Math.min(progress / 0.52, 1), 0.90);
+  if (progress > 0.35) drawGlitch(toText, Math.min((progress - 0.35) / 0.52, 1) * 0.9, 0.90);
+
+  // ── 5. fromText fading out / toText fading in ──
+  if (progress < 0.65) drawBase(fromText, 0, 0, '#000', '#000', 1 - Math.min(progress / 0.52, 1) * 0.94);
+  if (progress > 0.35) drawBase(toText,   0, 0, '#000', '#000', Math.min((progress - 0.35) / 0.52, 1));
+
+  // ── 6. Neon inversion strips ──
+  const numInvert = Math.floor(bellSq * 6);
   for (let i = 0; i < numInvert; i++) {
-    const iy = Math.random() * H;
-    const ih = BIG * (0.04 + Math.random() * 0.18);
-    const ix = (Math.random() - 0.5) * 18 * bell;
+    const iy  = Math.random() * H;
+    const ih  = BIG * (0.03 + Math.random() * 0.22);
+    const ix  = (Math.random() - 0.5) * 24 * bell;
+    const col = randNeon();
     ctx.save();
     ctx.beginPath(); ctx.rect(0, iy, W, ih); ctx.clip();
-    ctx.fillStyle = '#111'; ctx.fillRect(0, iy, W, ih);
-    drawBase(activeText, ix, 0, '#fff', '#ccc', 0.95);
+    ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, iy, W, ih);
+    ctx.shadowColor = col; ctx.shadowBlur = 16;
+    drawBase(activeText, ix, 0, col, col, 0.96);
+    ctx.shadowBlur = 0;
     ctx.restore();
   }
 
-  // ── 5. VHS displacement bars (extreme lateral shift) ──
-  const numBars = Math.floor(bell * 8);
+  // ── 7. VHS displacement bars with neon glow ──
+  const numBars = Math.floor(bell * 11);
   for (let i = 0; i < numBars; i++) {
     const barY = Math.random() * H;
-    const barH = BIG * (0.05 + Math.random() * 0.28);
-    const barX = (Math.random() - 0.5) * W * 0.14 * bell;
+    const barH = BIG * (0.04 + Math.random() * 0.30);
+    const barX = (Math.random() - 0.5) * W * 0.17 * bell;
+    const col  = Math.random() < 0.7 ? randNeon() : '#000';
     ctx.save();
     ctx.beginPath(); ctx.rect(0, barY, W, barH); ctx.clip();
     ctx.fillStyle = '#fff'; ctx.fillRect(0, barY, W, barH);
-    const barCol = Math.random() < 0.3 ? '#cc0000' : Math.random() < 0.5 ? '#0011cc' : '#000';
-    drawBase(activeText, barX, 0, barCol, '#444', 0.75);
+    ctx.shadowColor = col; ctx.shadowBlur = 8;
+    drawBase(activeText, barX, 0, col, col, 0.82);
+    ctx.shadowBlur = 0;
     ctx.restore();
   }
 
-  // ── 6. Ghost echo copies ──
-  if (bell > 0.35) {
-    ctx.globalAlpha = bell * 0.14;
-    for (let e = 0; e < 4; e++) {
-      const ex = (Math.random() - 0.5) * 24 * bell;
-      const ey = (Math.random() - 0.5) * 10 * bell;
-      drawBase(activeText, ex, ey, '#000', '#000', 1);
+  // ── 8. Ghost echo copies in neon ──
+  if (bell > 0.22) {
+    ctx.globalAlpha = bell * 0.15;
+    for (let e = 0; e < 6; e++) {
+      const ex  = (Math.random() - 0.5) * 34 * bell;
+      const ey  = (Math.random() - 0.5) * 14 * bell;
+      const col = randNeon();
+      ctx.shadowColor = col; ctx.shadowBlur = 12;
+      drawBase(activeText, ex, ey, col, col, 1);
     }
-    ctx.globalAlpha = 1;
+    ctx.shadowBlur = 0; ctx.globalAlpha = 1;
   }
 
-  // ── 7. Digital noise blocks ──
-  const numNoise = Math.floor(bellSq * 22);
-  for (let i = 0; i < numNoise; i++) {
-    const r = Math.random();
-    ctx.fillStyle = r < 0.3 ? '#dd0000' : r < 0.6 ? '#0011cc' : r < 0.8 ? '#000' : '#999';
-    ctx.globalAlpha = 0.35 + Math.random() * 0.55;
-    ctx.fillRect(
-      Math.random() * W,
-      Math.random() * H,
-      2 + Math.random() * 44,
-      1 + Math.random() * 14
-    );
+  // ── 9. Neon pixel explosion ──
+  const numPx = Math.floor(bellCu * 80);
+  for (let i = 0; i < numPx; i++) {
+    ctx.fillStyle   = randNeon();
+    ctx.globalAlpha = 0.35 + Math.random() * 0.6;
+    ctx.fillRect(Math.random() * W, Math.random() * H, 1 + Math.random() * 52, 1 + Math.random() * 16);
   }
   ctx.globalAlpha = 1;
 
-  // ── 8. Scanline noise (red-tinted for flavour) ──
-  ctx.globalAlpha = bell * 0.07;
+  // ── 10. Rainbow scanlines ──
+  ctx.globalAlpha = bell * 0.09;
   for (let y = 0; y < H; y += 2) {
-    if (Math.random() < 0.28) {
-      ctx.fillStyle = Math.random() < 0.4 ? '#cc0000' : '#111';
-      ctx.fillRect(Math.random() * W * 0.3, y, W * (0.22 + Math.random() * 0.55), 1);
+    if (Math.random() < 0.30) {
+      ctx.fillStyle = randNeon();
+      ctx.fillRect(Math.random() * W * 0.2, y, W * (0.28 + Math.random() * 0.6), 1);
     }
   }
   ctx.globalAlpha = 1;
