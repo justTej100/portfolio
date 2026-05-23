@@ -19,7 +19,7 @@ let animId = null;
 let phase = 'idle';
 let frame = 0;
 const TOTAL_FRAMES = 55;
-const BIG = 160;
+const BIG = 188;
 
 /**
  * Initialize the canvas size based on viewport width and the base font size.
@@ -27,7 +27,7 @@ const BIG = 160;
  */
 function initCanvas() {
   const W = Math.min(window.innerWidth - 16, 1100);
-  const H = Math.floor(BIG * 1.38);
+  const H = Math.floor(BIG * 1.40);
   canvas.width = W;
   canvas.height = H;
   return { W, H };
@@ -49,7 +49,9 @@ let dims = initCanvas();
 function drawBase(text, offsetX, offsetY, colorBig, colorSmall, alpha) {
   const { W, H } = dims;
   const cx = W / 2 + offsetX;
-  const cy = H / 2 + offsetY;
+  // cy is fixed relative to BIG (not H) so top padding stays tight
+  // regardless of how tall the canvas is.
+  const cy = Math.floor(BIG * 0.81) + offsetY;
   ctx.globalAlpha = alpha;
 
   // ── Large vertically-stretched serif layer ──
@@ -197,7 +199,7 @@ function renderIdle(text) {
   const { W, H } = dims;
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, W, H);
-  drawBase(text, 0, 0, '#000000d2', '#000000', 1);
+  drawBase(text, 0, 0, '#000000', '#000000', 1);
 }
 
 /**
