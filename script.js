@@ -27,13 +27,24 @@ const BIG = 188;
  */
 function initCanvas() {
   const W = Math.min(window.innerWidth - 16, 1100);
-  const H = Math.floor(BIG * 1.40);
+  const H = Math.floor(BIG * 1.30);
   canvas.width = W;
   canvas.height = H;
   return { W, H };
 }
 
 let dims = initCanvas();
+
+// Shared font size computed from the longest state so all texts render
+// at the same character height — shorter texts just take less width.
+let sharedBigSize = BIG;
+function computeSharedBigSize() {
+  const longestText = states.reduce((a, b) => a.length > b.length ? a : b);
+  ctx.font = `900 ${BIG}px "Times New Roman", serif`;
+  const measured = ctx.measureText(longestText).width;
+  sharedBigSize = Math.floor(BIG * (dims.W * 0.97) / measured);
+}
+computeSharedBigSize();
 
 /**
  * Draw the two overlapping text layers that produce the logo/name effect.
@@ -57,12 +68,7 @@ function drawBase(text, offsetX, offsetY, colorBig, colorSmall, alpha) {
   // ── Large vertically-stretched serif layer ──
   ctx.save();
   ctx.scale(1, 1.55);
-  // Fit font size to canvas width so text never clips
-  let bigSize = BIG;
-  ctx.font = `900 ${bigSize}px "Times New Roman", serif`;
-  const measuredBig = ctx.measureText(text).width;
-  if (measuredBig > W * 0.97) bigSize = Math.floor(bigSize * (W * 0.97) / measuredBig);
-  ctx.font = `900 ${bigSize}px "Times New Roman", serif`;
+  ctx.font = `900 ${sharedBigSize}px "Times New Roman", serif`;
   ctx.fillStyle = colorBig;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -292,6 +298,7 @@ function triggerName() {
 
 window.addEventListener('resize', () => {
   dims = initCanvas();
+  computeSharedBigSize();
   if (phase === 'idle') renderIdle(states[idx]);
 });
 
