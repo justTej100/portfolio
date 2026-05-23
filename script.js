@@ -15,10 +15,12 @@ const ctx = canvas.getContext('2d');
 // `BIG`: base font size used for the large (display) text.
 const states = ['I AM TEJINDER', 'I AM TJ'];
 let idx = 0;
-let animId = null;
+let animId     = null;
+let idleAnimId = null;
+let idleFrame  = 0;
 let phase = 'idle';
 let frame = 0;
-const TOTAL_FRAMES = 55;
+const TOTAL_FRAMES = 65;
 const BIG = 188;
 
 /**
@@ -173,23 +175,28 @@ function randomBolt(intensity) {
 }
 
 /**
- * Draw horizontal glitch "slices" of the provided text. Each slice is a clipped
- * rectangle with a horizontal offset to create a corrupted/glitchy appearance.
- * @param {string} text - The text to glitch.
- * @param {number} t - Intensity factor (0..1) controlling horizontal offsets.
+ * Draw glitch slices of text with randomised horizontal/vertical offsets and
+ * occasional red or blue colour tints to simulate chromatic channel corruption.
+ * @param {string} text
+ * @param {number} t - Intensity 0..1.
+ * @param {number} [baseAlpha=0.92] - Opacity of each slice.
  */
-function drawGlitch(text, t) {
+function drawGlitch(text, t, baseAlpha = 0.92) {
   const { W, H } = dims;
-  const slices = 5 + Math.floor(Math.random() * 8);
+  const slices = 8 + Math.floor(Math.random() * 14);
   for (let i = 0; i < slices; i++) {
-    const sy = Math.random() * H;
-    const sh = 2 + Math.random() * (BIG * 0.22);
-    const ox = (Math.random() - 0.5) * 40 * t;
+    const sy  = Math.random() * H;
+    const sh  = 1 + Math.random() * BIG * (0.06 + 0.28 * t);
+    const ox  = (Math.random() - 0.5) * 58 * t;
+    const oy  = (Math.random() - 0.5) * 5  * t;
+    const rnd = Math.random();
+    const col = rnd < 0.18 ? '#cc0000' : rnd < 0.34 ? '#1122cc' : '#000000';
+    const sm  = col === '#000000' ? '#444' : col;
     ctx.save();
     ctx.beginPath();
     ctx.rect(0, sy, W, sh);
     ctx.clip();
-    drawBase(text, ox, 0, '#000', '#555', 0.88);
+    drawBase(text, ox, oy, col, sm, baseAlpha);
     ctx.restore();
   }
 }
@@ -197,74 +204,199 @@ function drawGlitch(text, t) {
 
 
 /**
- * Render the static (idle) state for a given text value. Clears the canvas to
- * white and paints the base text plus scanlines.
- * @param {string} text - The text to render in the idle state.
+ * Draw one frame of the idle state: big serif layer is fully static; the small
+ * Impact layer gets a continuous low-level chromatic aberration pulse plus
+ * occasional random glitch slices so it never fully settles.
  */
-function renderIdle(text) {
+function renderIdleFrame(text) {
   const { W, H } = dims;
+  const cx    = W / 2;
+  const cy    = Math.floor(BIG * 0.81);
+  const small = Math.floor(BIG * 0.26);
+  const smallY = cy + small * 0.08;
+
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, W, H);
-  drawBase(text, 0, 0, '#000000', '#000000', 1);
+
+  // Big serif layer — completely static
+  ctx.save();
+  ctx.scale(1, 1.55);
+  ctx.font = `900 ${sharedBigSize}px "Times New Roman", serif`;
+  ctx.fillStyle = '#000';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, cx, cy / 1.55);
+  ctx.restore();
+
+  // Subtle pulsing chroma shift on the small layer
+  const pulse  = Math.sin(idleFrame * 0.035) * 0.5 + 0.5;
+  const shift  = Math.round(1.2 + pulse * 2.8);
+  ctx.font = `900 ${small}px Impact, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.globalAlpha = 0.38;
+  ctx.fillStyle = '#cc0000'; ctx.fillText(text, cx - shift, smallY);
+  ctx.fillStyle = '#0011cc'; ctx.fillText(text, cx + shift, smallY);
+  ctx.globalAlpha = 1;
+
+  // Occasional random glitch slice (4 % chance per frame ≈ every ~1.7 s at 60 fps)
+  if (Math.random() < 0.04) {
+    const sy = smallY - small + Math.random() * small * 2;
+    const sh = 2 + Math.random() * 7;
+    const ox = (Math.random() - 0.5) * 14;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, sy, W, sh); ctx.clip();
+    ctx.font = `900 ${small}px Impact, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = Math.random() < 0.5 ? '#cc0000' : '#0011cc';
+    ctx.fillText(text, cx + ox, smallY);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
+
+  // Small text — normal draw on top
+  ctx.font = `900 ${small}px Impact, sans-serif`;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.strokeStyle = 'rgba(255,255,255,0.82)';
+  ctx.lineWidth   = Math.max(1.5, small * 0.07);
+  ctx.lineJoin    = 'round';
+  ctx.strokeText(text, cx, smallY);
+  ctx.fillStyle = '#000';
+  ctx.fillText(text, cx, smallY);
+}
+
+function stopIdleAnimation() {
+  if (idleAnimId) { cancelAnimationFrame(idleAnimId); idleAnimId = null; }
 }
 
 /**
- * Render a transition animation between two text values.
- * `progress` is expected to be in the 0..1 range where 0 is the start and 1
- * is the end of the transition. The function renders bolts, glitches and
- * crossfades between the old and new text depending on progress.
- * @param {string} fromText - Text value transitioning from.
- * @param {string} toText - Text value transitioning to.
- * @param {number} progress - Normalized progress (0..1) for the transition.
+ * Start the continuous idle animation loop for the given text.
+ * Cancels any previous idle loop first.
+ */
+function renderIdle(text) {
+  stopIdleAnimation();
+  idleFrame = 0;
+  function step() {
+    idleFrame++;
+    renderIdleFrame(text);
+    idleAnimId = requestAnimationFrame(step);
+  }
+  step();
+}
+
+/**
+ * Render a chaotic glitch transition — white background throughout.
+ * Layers (all intensity-gated by a sin bell curve):
+ *  1. Triple RGB chromatic aberration (R left, B right, G up)
+ *  2. fromText corrupting out with heavy slice displacement
+ *  3. toText phasing in, also corrupted
+ *  4. Inversion strips — black bars with white text punched through
+ *  5. VHS displacement bars (extreme lateral shift)
+ *  6. Ghost echo copies at random offsets
+ *  7. Digital noise blocks (red / blue / grey rectangles)
+ *  8. Scanline noise with coloured lines
  */
 function renderTransition(fromText, toText, progress) {
   const { W, H } = dims;
-  ctx.fillStyle = '#000';
+
+  ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, W, H);
 
-  const intensity = Math.sin(progress * Math.PI);
-  const boltCount = Math.floor(3 + intensity * 18);
-  for (let i = 0; i < boltCount; i++) randomBolt(intensity);
+  const bell       = Math.sin(progress * Math.PI);
+  const bellSq     = bell * bell;
+  const activeText = progress < 0.5 ? fromText : toText;
 
-  if (progress < 0.45) {
-    const corrupt = progress / 0.45;
-    drawGlitch(fromText, corrupt);
-    const shift = Math.floor(corrupt * 16);
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = 0.22 * corrupt;
-    drawBase(fromText, -shift, 0, '#000', '#000', 1);
-    drawBase(fromText,  shift, 0, '#888', '#888', 1);
+  // ── 1. Triple chromatic aberration ──
+  const chromaShift = Math.round(bell * 52);
+  if (chromaShift > 0) {
+    ctx.globalAlpha = bell * 0.58;
+    drawBase(activeText, -chromaShift,                  0, '#dd0000', '#dd0000', 1);
+    drawBase(activeText,  chromaShift,                  0, '#0011cc', '#0011cc', 1);
+    drawBase(activeText,  0,          -Math.round(bell * 10), '#008800', '#008800', 1);
     ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
-    ctx.restore();
-  } else if (progress < 0.55) {
-    if (Math.random() < 0.6) {
-      ctx.globalAlpha = 0.55 + Math.random() * 0.35;
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(0, 0, W, H);
-      ctx.globalAlpha = 1;
-    }
-  } else {
-    const emerge = (progress - 0.55) / 0.45;
-    const corrupt = 1 - emerge;
-    drawGlitch(toText, corrupt * 0.7);
+  }
+
+  // ── 2. fromText glitching out ──
+  if (progress < 0.65) {
+    const t     = Math.min(progress / 0.55, 1);
+    const alpha = 1 - t * 0.94;
+    drawGlitch(fromText, t, 0.92);
+    drawBase(fromText, 0, 0, '#000', '#000', alpha);
+  }
+
+  // ── 3. toText glitching in ──
+  if (progress > 0.35) {
+    const t      = Math.min((progress - 0.35) / 0.55, 1);
+    const corrupt = 1 - t;
+    drawGlitch(toText, corrupt, 0.92);
+    drawBase(toText, 0, 0, '#000', '#000', t);
+  }
+
+  // ── 4. Inversion strips (black band, white text inside) ──
+  const numInvert = Math.floor(bellSq * 4);
+  for (let i = 0; i < numInvert; i++) {
+    const iy = Math.random() * H;
+    const ih = BIG * (0.04 + Math.random() * 0.18);
+    const ix = (Math.random() - 0.5) * 18 * bell;
     ctx.save();
-    ctx.globalAlpha = emerge;
-    drawBase(toText, 0, 0, '#000', '#555', 1);
-    ctx.globalAlpha = 1;
-    ctx.restore();
-    const shift = Math.floor(corrupt * 14);
-    ctx.save();
-    ctx.globalCompositeOperation = 'screen';
-    ctx.globalAlpha = 0.18 * corrupt;
-    drawBase(toText, -shift, 0, '#000', '#000', 1);
-    drawBase(toText,  shift, 0, '#aaa', '#aaa', 1);
-    ctx.globalAlpha = 1;
-    ctx.globalCompositeOperation = 'source-over';
+    ctx.beginPath(); ctx.rect(0, iy, W, ih); ctx.clip();
+    ctx.fillStyle = '#111'; ctx.fillRect(0, iy, W, ih);
+    drawBase(activeText, ix, 0, '#fff', '#ccc', 0.95);
     ctx.restore();
   }
 
+  // ── 5. VHS displacement bars (extreme lateral shift) ──
+  const numBars = Math.floor(bell * 8);
+  for (let i = 0; i < numBars; i++) {
+    const barY = Math.random() * H;
+    const barH = BIG * (0.05 + Math.random() * 0.28);
+    const barX = (Math.random() - 0.5) * W * 0.14 * bell;
+    ctx.save();
+    ctx.beginPath(); ctx.rect(0, barY, W, barH); ctx.clip();
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, barY, W, barH);
+    const barCol = Math.random() < 0.3 ? '#cc0000' : Math.random() < 0.5 ? '#0011cc' : '#000';
+    drawBase(activeText, barX, 0, barCol, '#444', 0.75);
+    ctx.restore();
+  }
+
+  // ── 6. Ghost echo copies ──
+  if (bell > 0.35) {
+    ctx.globalAlpha = bell * 0.14;
+    for (let e = 0; e < 4; e++) {
+      const ex = (Math.random() - 0.5) * 24 * bell;
+      const ey = (Math.random() - 0.5) * 10 * bell;
+      drawBase(activeText, ex, ey, '#000', '#000', 1);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  // ── 7. Digital noise blocks ──
+  const numNoise = Math.floor(bellSq * 22);
+  for (let i = 0; i < numNoise; i++) {
+    const r = Math.random();
+    ctx.fillStyle = r < 0.3 ? '#dd0000' : r < 0.6 ? '#0011cc' : r < 0.8 ? '#000' : '#999';
+    ctx.globalAlpha = 0.35 + Math.random() * 0.55;
+    ctx.fillRect(
+      Math.random() * W,
+      Math.random() * H,
+      2 + Math.random() * 44,
+      1 + Math.random() * 14
+    );
+  }
+  ctx.globalAlpha = 1;
+
+  // ── 8. Scanline noise (red-tinted for flavour) ──
+  ctx.globalAlpha = bell * 0.07;
+  for (let y = 0; y < H; y += 2) {
+    if (Math.random() < 0.28) {
+      ctx.fillStyle = Math.random() < 0.4 ? '#cc0000' : '#111';
+      ctx.fillRect(Math.random() * W * 0.3, y, W * (0.22 + Math.random() * 0.55), 1);
+    }
+  }
+  ctx.globalAlpha = 1;
 }
 
 /**
@@ -275,6 +407,7 @@ function renderTransition(fromText, toText, progress) {
  */
 function triggerName() {
   if (phase === 'transitioning') return;
+  stopIdleAnimation();
   const fromText = states[idx];
   idx = (idx + 1) % states.length;
   const toText = states[idx];
@@ -299,7 +432,7 @@ function triggerName() {
 window.addEventListener('resize', () => {
   dims = initCanvas();
   computeSharedBigSize();
-  if (phase === 'idle') renderIdle(states[idx]);
+  if (phase === 'idle') { stopIdleAnimation(); renderIdle(states[idx]); }
 });
 
 renderIdle(states[0]);
