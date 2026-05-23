@@ -284,22 +284,6 @@ window.addEventListener('resize', () => {
 renderIdle(states[0]);
 
 
-/* ── Smooth scroll for nav links ── */
-const navLinks = document.querySelectorAll('nav ul li a');
-for (const link of navLinks) {
-  link.addEventListener('click', smoothScroll);
-}
-
-function smoothScroll(event) {
-  event.preventDefault();
-  const targetId = this.getAttribute('href');
-  const target = document.querySelector(targetId);
-  if (!target) return;
-  const targetPosition = target.offsetTop - 80;
-  window.scroll({ top: targetPosition, behavior: 'smooth' });
-}
-
-
 /* ── Contact form AJAX submission ── */
 const form = document.querySelector('form');
 if (form) {
