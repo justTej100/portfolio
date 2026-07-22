@@ -48,8 +48,8 @@ function computeSharedBigSize() {
 }
 computeSharedBigSize();
 
-// ── Neon colour palette ──
-const NEON = ['#ff0080','#00ffff','#ff6600','#00ff44','#cc00ff','#ffee00','#ff2200','#0055ff'];
+// ── Mob Psycho palette: stark black/white with a single red accent ──
+const NEON = ['#000000','#000000','#ffffff','#e24b4a','#000000','#ffffff','#e24b4a','#000000'];
 function randNeon() { return NEON[Math.floor(Math.random() * NEON.length)]; }
 
 /**
@@ -454,6 +454,48 @@ window.addEventListener('resize', () => {
   if (phase === 'idle') { stopIdleAnimation(); renderIdle(states[idx]); }
 });
 
-renderIdle(states[0]);
+/**
+ * Mob Psycho style startup: a power-meter count-up (0 -> 100%) that climbs
+ * fast then jitters/overshoots right at the end, before the overlay fades
+ * out to reveal the name canvas underneath.
+ */
+function runIntro() {
+  const overlay = document.getElementById('introOverlay');
+  const pctEl   = document.getElementById('introPct');
+  const signEl  = document.getElementById('introPctSign');
+  if (!overlay || !pctEl) { renderIdle(states[0]); return; }
+
+  const duration = 900;
+  const start = performance.now();
+
+  function frame(now) {
+    const t = Math.min(1, (now - start) / duration);
+    const rampT = t < 0.85 ? t / 0.85 : 1;
+    let val = Math.round(rampT * 100);
+    if (t > 0.85 && t < 1) {
+      val = 100 + Math.round(Math.sin(t * 60) * (1 - t) * 8);
+    }
+    pctEl.firstChild.textContent = val;
+
+    const settle = t < 0.85 ? t : (1 - (t - 0.85) / 0.15);
+    const shakeX = (Math.random() - 0.5) * 4 * settle;
+    const shakeY = (Math.random() - 0.5) * 2.4 * settle;
+    pctEl.style.transform = `translate(${shakeX.toFixed(1)}px, ${shakeY.toFixed(1)}px)`;
+
+    if (t < 1) {
+      requestAnimationFrame(frame);
+    } else {
+      pctEl.firstChild.textContent = '100';
+      pctEl.style.transform = 'none';
+      setTimeout(() => {
+        overlay.classList.add('hide');
+        renderIdle(states[0]);
+      }, 150);
+    }
+  }
+  requestAnimationFrame(frame);
+}
+
+runIntro();
 
 

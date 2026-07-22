@@ -1,5 +1,49 @@
 @import url(//fonts.googleapis.com/css?family=Lato:300:400);
 
+/* Drop your downloaded Mob Psycho lookalike font file in /fonts and point
+   this at it. Falls back to Anton (loaded in index.html) until you do. */
+@font-face {
+  font-family: 'MobPsycho';
+  src: url('fonts/mob100.woff2') format('woff2'),
+       url('fonts/mob100.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  --mob-font: 'MobPsycho', 'Anton', Impact, sans-serif;
+}
+
+/* ── Startup power-meter overlay ── */
+#introOverlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+#introOverlay.hide {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+#introPct {
+  font-family: var(--mob-font);
+  font-size: clamp(64px, 18vw, 160px);
+  color: #fff;
+  letter-spacing: 2px;
+  line-height: 1;
+}
+
+#introPctSign {
+  font-size: 0.5em;
+  margin-left: 4px;
+}
+
 html {
   height: 100%;
   overflow: hidden;
