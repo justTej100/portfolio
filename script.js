@@ -13,7 +13,7 @@ const ctx = canvas.getContext('2d');
 // `frame`: current frame counter used during transitions.
 // `TOTAL_FRAMES`: number of animation frames used for a full transition.
 // `BIG`: base font size used for the large (display) text.
-const states = ['I AM TEJINDER', 'I AM TJ'];
+const states = ['TEJINDER TJ BAJAJ', 'I AM TJ'];
 let idx = 0;
 let animId     = null;
 let idleAnimId = null;
@@ -53,17 +53,16 @@ const NEON = ['#000000','#000000','#ffffff','#e24b4a','#000000','#ffffff','#e24b
 function randNeon() { return NEON[Math.floor(Math.random() * NEON.length)]; }
 
 /**
- * Draw the two overlapping text layers that produce the logo/name effect.
- * A large vertically-stretched serif layer sits behind a smaller Impact layer,
- * both centered at the same point so they overlap and create depth.
+ * Draw the single large vertically-stretched serif text layer, centered
+ * at the canvas midpoint (plus any offset). This is the sole visual
+ * focus of the name effect — no smaller overlay text.
  * @param {string} text - The text to draw.
  * @param {number} offsetX - Horizontal pixel offset from center.
  * @param {number} offsetY - Vertical pixel offset from center.
- * @param {string} colorBig - CSS color for the large text layer.
- * @param {string} colorSmall - CSS color for the small overlapping layer.
+ * @param {string} color - CSS color for the text layer.
  * @param {number} alpha - Global opacity to use while drawing.
  */
-function drawBase(text, offsetX, offsetY, colorBig, colorSmall, alpha) {
+function drawBase(text, offsetX, offsetY, color, alpha) {
   const { W, H } = dims;
   const cx = W / 2 + offsetX;
   // cy is fixed relative to BIG (not H) so top padding stays tight
@@ -71,30 +70,14 @@ function drawBase(text, offsetX, offsetY, colorBig, colorSmall, alpha) {
   const cy = Math.floor(BIG * 0.81) + offsetY;
   ctx.globalAlpha = alpha;
 
-  // ── Large vertically-stretched serif layer ──
   ctx.save();
   ctx.scale(1, 1.55);
   ctx.font = `900 ${sharedBigSize}px "Times New Roman", serif`;
-  ctx.fillStyle = colorBig;
+  ctx.fillStyle = color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, cx, cy / 1.55);
   ctx.restore();
-
-  // ── Smaller Impact layer centered on the same point ──
-  const small = Math.floor(BIG * 0.26);
-  const smallY = cy + small * 0.08;
-  ctx.font = `900 ${small}px Impact, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  // White outline pass
-  ctx.strokeStyle = 'rgba(255,255,255,0.82)';
-  ctx.lineWidth = Math.max(1.5, small * 0.07);
-  ctx.lineJoin = 'round';
-  ctx.strokeText(text, cx, smallY);
-  // Fill pass
-  ctx.fillStyle = colorSmall;
-  ctx.fillText(text, cx, smallY);
   ctx.globalAlpha = 1;
 }
 
@@ -196,78 +179,50 @@ function drawGlitch(text, t, baseAlpha = 0.92) {
     const col = Math.random() < 0.75 ? randNeon() : '#000';
     ctx.save();
     ctx.beginPath(); ctx.rect(0, sy, W, sh); ctx.clip();
-    drawBase(text, ox, oy, col, col, baseAlpha);
+    drawBase(text, ox, oy, col, baseAlpha);
     ctx.restore();
   }
 }
 
-
-
 /**
- * Draw one frame of the idle state: big serif layer is fully static; the small
- * Impact layer gets a continuous low-level chromatic aberration pulse plus
- * occasional random glitch slices so it never fully settles.
+ * Draw one frame of the idle state. The large serif text is the sole
+ * visual focus — it gets a continuous low-level chromatic aberration
+ * pulse (two offset colour ghosts) plus occasional random glitch slices
+ * cut directly through the big text, so it never fully settles.
  */
 function renderIdleFrame(text) {
   const { W, H } = dims;
-  const cx    = W / 2;
-  const cy    = Math.floor(BIG * 0.81);
-  const small = Math.floor(BIG * 0.26);
-  const smallY = cy + small * 0.08;
+  const cx = W / 2;
+  const cy = Math.floor(BIG * 0.81);
 
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, W, H);
 
-  // Big serif layer — completely static
-  ctx.save();
-  ctx.scale(1, 1.55);
-  ctx.font = `900 ${sharedBigSize}px "Times New Roman", serif`;
-  ctx.fillStyle = '#000';
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.fillText(text, cx, cy / 1.55);
-  ctx.restore();
-
-  // Neon colour-cycling chroma on the small layer
-  const t      = idleFrame * 0.032;
-  const pulse  = Math.sin(t) * 0.5 + 0.5;
-  const shift  = Math.round(1.4 + pulse * 3.2);
-  const colA   = NEON[Math.floor(t * 0.4) % NEON.length];
-  const colB   = NEON[(Math.floor(t * 0.4) + 4) % NEON.length];
-  ctx.font = `900 ${small}px Impact, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
+  // Chromatic aberration pulse — two colour ghosts drift apart and back
+  const t     = idleFrame * 0.032;
+  const pulse = Math.sin(t) * 0.5 + 0.5;
+  const shift = Math.round(1.4 + pulse * 5.5);
+  const colA  = NEON[Math.floor(t * 0.4) % NEON.length];
+  const colB  = NEON[(Math.floor(t * 0.4) + 4) % NEON.length];
   ctx.globalAlpha = 0.42;
-  ctx.fillStyle = colA; ctx.fillText(text, cx - shift, smallY);
-  ctx.fillStyle = colB; ctx.fillText(text, cx + shift, smallY);
+  drawBase(text, -shift, 0, colA, 1);
+  drawBase(text,  shift, 0, colB, 1);
   ctx.globalAlpha = 1;
 
-  // Neon glitch slice (8 % chance per frame)
+  // Glitch slice cut through the big text (8% chance per frame)
   if (Math.random() < 0.08) {
-    const sy  = smallY - small + Math.random() * small * 2.2;
-    const sh  = 1 + Math.random() * 9;
-    const ox  = (Math.random() - 0.5) * 20;
+    const sy  = cy - BIG * 0.75 + Math.random() * BIG * 1.5;
+    const sh  = 1 + Math.random() * 12;
+    const ox  = (Math.random() - 0.5) * 26;
     const col = randNeon();
     ctx.save();
     ctx.beginPath(); ctx.rect(0, sy, W, sh); ctx.clip();
-    ctx.font = `900 ${small}px Impact, sans-serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.globalAlpha = 0.9;
-    ctx.fillStyle = col; ctx.fillText(text, cx + ox, smallY);
-    ctx.globalAlpha = 1;
+    drawBase(text, ox, 0, col, 0.9);
     ctx.restore();
   }
 
-  // Small text — normal draw on top
-  ctx.font = `900 ${small}px Impact, sans-serif`;
-  ctx.textAlign = 'center';
-  ctx.textBaseline = 'middle';
-  ctx.strokeStyle = 'rgba(255,255,255,0.82)';
-  ctx.lineWidth   = Math.max(1.5, small * 0.07);
-  ctx.lineJoin    = 'round';
-  ctx.strokeText(text, cx, smallY);
-  ctx.fillStyle = '#000';
-  ctx.fillText(text, cx, smallY);
+  // Main text — solid black, drawn on top for legibility
+  drawBase(text, 0, 0, '#000', 1);
 }
 
 function stopIdleAnimation() {
@@ -294,14 +249,14 @@ function renderIdle(text) {
  * palette used across every effect simultaneously.
  *
  *  1. Neon background tint flash
- *  2. 8-way chromatic star (one copy of text per NEON colour, all 8 directions)
+ *  2. 4-way chromatic cross (one copy of text per NEON colour)
  *  3. Skewed ghost layers (ctx.transform warp + neon colour)
  *  4. Neon glitch slices (drawGlitch — 75 % chance each slice is neon)
  *  5. fromText fading out / toText fading in
  *  6. Neon inversion strips (black band + glowing neon text inside)
  *  7. VHS bars with neon colours + glow
- *  8. 6 ghost echo copies in random neon colours
- *  9. Neon pixel explosion (up to 80 rectangles at peak)
+ *  8. 2 ghost echo copies in random neon colours
+ *  9. Neon pixel explosion (up to 35 rectangles at peak)
  * 10. Rainbow scanlines
  */
 function renderTransition(fromText, toText, progress) {
@@ -330,7 +285,7 @@ function renderTransition(fromText, toText, progress) {
       const ang = axes[i] * Math.PI / 4;
       const dx  = Math.round(Math.cos(ang) * chromaR);
       const dy  = Math.round(Math.sin(ang) * chromaR * 0.22);
-      drawBase(activeText, dx, dy, NEON[i], NEON[i], 1);
+      drawBase(activeText, dx, dy, NEON[i], 1);
     }
     ctx.globalAlpha = 1;
   }
@@ -345,7 +300,7 @@ function renderTransition(fromText, toText, progress) {
       ctx.save();
       ctx.transform(1, skY, skX, 1, 0, 0);
       ctx.globalAlpha = bell * 0.18;
-      drawBase(activeText, dx, 0, col, col, 1);
+      drawBase(activeText, dx, 0, col, 1);
       ctx.globalAlpha = 1;
       ctx.restore();
     }
@@ -356,8 +311,8 @@ function renderTransition(fromText, toText, progress) {
   if (progress > 0.35) drawGlitch(toText, Math.min((progress - 0.35) / 0.52, 1) * 0.9, 0.90);
 
   // ── 5. fromText fading out / toText fading in ──
-  if (progress < 0.65) drawBase(fromText, 0, 0, '#000', '#000', 1 - Math.min(progress / 0.52, 1) * 0.94);
-  if (progress > 0.35) drawBase(toText,   0, 0, '#000', '#000', Math.min((progress - 0.35) / 0.52, 1));
+  if (progress < 0.65) drawBase(fromText, 0, 0, '#000', 1 - Math.min(progress / 0.52, 1) * 0.94);
+  if (progress > 0.35) drawBase(toText,   0, 0, '#000', Math.min((progress - 0.35) / 0.52, 1));
 
   // ── 6. Neon inversion strips (max 2) ──
   const numInvert = Math.floor(bellSq * 2);
@@ -369,7 +324,7 @@ function renderTransition(fromText, toText, progress) {
     ctx.save();
     ctx.beginPath(); ctx.rect(0, iy, W, ih); ctx.clip();
     ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, iy, W, ih);
-    drawBase(activeText, ix, 0, col, col, 0.96);
+    drawBase(activeText, ix, 0, col, 0.96);
     ctx.restore();
   }
 
@@ -383,7 +338,7 @@ function renderTransition(fromText, toText, progress) {
     ctx.save();
     ctx.beginPath(); ctx.rect(0, barY, W, barH); ctx.clip();
     ctx.fillStyle = '#fff'; ctx.fillRect(0, barY, W, barH);
-    drawBase(activeText, barX, 0, col, col, 0.82);
+    drawBase(activeText, barX, 0, col, 0.82);
     ctx.restore();
   }
 
@@ -393,7 +348,7 @@ function renderTransition(fromText, toText, progress) {
     for (let e = 0; e < 2; e++) {
       const ex  = (Math.random() - 0.5) * 34 * bell;
       const ey  = (Math.random() - 0.5) * 14 * bell;
-      drawBase(activeText, ex, ey, randNeon(), randNeon(), 1);
+      drawBase(activeText, ex, ey, randNeon(), 1);
     }
     ctx.globalAlpha = 1;
   }
@@ -462,7 +417,6 @@ window.addEventListener('resize', () => {
 function runIntro() {
   const overlay = document.getElementById('introOverlay');
   const pctEl   = document.getElementById('introPct');
-  const signEl  = document.getElementById('introPctSign');
   if (!overlay || !pctEl) { renderIdle(states[0]); return; }
 
   const duration = 900;
@@ -497,5 +451,3 @@ function runIntro() {
 }
 
 runIntro();
-
-
