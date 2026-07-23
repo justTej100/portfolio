@@ -17,14 +17,20 @@ const ctx = canvas.getContext('2d');
 const states = ['TEJINDER TJ BAJAJ', 'I AM TJ'];
 let idx = 0;
 let animId       = null;
-let idleIntervalId = null;
 let phase = 'idle';
 let frame = 0;
 const IDLE_INTERVAL_MS = 500;
 
 // `FONTS`: the idle animation cycles the big text through these font
 // families every IDLE_INTERVAL_MS, keeping the text itself unchanged.
-const FONTS = ['Times New Roman', 'Arial', 'Impact', 'Georgia', 'Courier New', 'Verdana', 'Trebuchet MS', 'Comic Sans MS'];
+const FONTS = [
+  'Anton', 'Archivo Black', 'Bangers', 'Bebas Neue', 'Bungee', 'Bungee Shade',
+  'Creepster', 'Permanent Marker', 'Righteous', 'Rubik Mono One', 'Russo One',
+  'Special Elite', 'Staatliches', 'Teko', 'Titan One', 'Orbitron', 'Faster One',
+  'Monoton', 'Fjalla One', 'Alfa Slab One', 'Black Ops One', 'Chela One',
+  'Frijole', 'Nosifer', 'Rubik Glitch', 'Vast Shadow', 'Ultra', 'Shrikhand',
+  'Impact', 'Times New Roman'
+];
 let fontIdx = 0;
 const TOTAL_FRAMES = 60;
 const BIG = 188;
@@ -203,23 +209,34 @@ function drawStaticFrame(text) {
   drawBase(text, 0, 0, '#000', 1, FONTS[fontIdx]);
 }
 
+let idleMouseHandler = null;
+let idleLastMoveAt = 0;
+
 function stopIdleAnimation() {
-  if (idleIntervalId) { clearInterval(idleIntervalId); idleIntervalId = null; }
+  if (idleMouseHandler) {
+    window.removeEventListener('mousemove', idleMouseHandler);
+    idleMouseHandler = null;
+  }
 }
 
 /**
- * Start the idle "font cycle": the text stays the same, but every
- * IDLE_INTERVAL_MS the big text redraws in the next font family from
- * `FONTS`. No glitch/chroma here — that's reserved for the click-triggered
- * transition.
+ * Start the idle "font cycle": the text stays the same, and the font only
+ * advances to the next entry in `FONTS` when the mouse moves — throttled
+ * so it won't flip faster than once every IDLE_INTERVAL_MS. No glitch/chroma
+ * here — that's reserved for the click-triggered transition.
  */
 function renderIdle(text) {
   stopIdleAnimation();
   drawStaticFrame(text);
-  idleIntervalId = setInterval(() => {
+  idleLastMoveAt = performance.now();
+  idleMouseHandler = () => {
+    const now = performance.now();
+    if (now - idleLastMoveAt < IDLE_INTERVAL_MS) return;
+    idleLastMoveAt = now;
     fontIdx = (fontIdx + 1) % FONTS.length;
     drawStaticFrame(text);
-  }, IDLE_INTERVAL_MS);
+  };
+  window.addEventListener('mousemove', idleMouseHandler);
 }
 
 /**
@@ -428,4 +445,6 @@ function runIntro() {
   requestAnimationFrame(frame);
 }
 
-runIntro();
+Promise.all(FONTS.map(f => document.fonts.load(`900 100px "${f}"`)))
+  .catch(() => {})
+  .finally(runIntro);
