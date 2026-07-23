@@ -13,13 +13,19 @@ const ctx = canvas.getContext('2d');
 // `frame`: current frame counter used during transitions.
 // `TOTAL_FRAMES`: number of animation frames used for a full transition.
 // `BIG`: base font size used for the large (display) text.
+// `states`: the two names toggled by clicking the canvas.
 const states = ['TEJINDER TJ BAJAJ', 'I AM TJ'];
 let idx = 0;
-let animId     = null;
-let idleAnimId = null;
-let idleFrame  = 0;
+let animId       = null;
+let idleIntervalId = null;
 let phase = 'idle';
 let frame = 0;
+const IDLE_INTERVAL_MS = 500;
+
+// `FONTS`: the idle animation cycles the big text through these font
+// families every IDLE_INTERVAL_MS, keeping the text itself unchanged.
+const FONTS = ['Times New Roman', 'Arial', 'Impact', 'Georgia', 'Courier New', 'Verdana', 'Trebuchet MS', 'Comic Sans MS'];
+let fontIdx = 0;
 const TOTAL_FRAMES = 60;
 const BIG = 188;
 
@@ -61,8 +67,9 @@ function randNeon() { return NEON[Math.floor(Math.random() * NEON.length)]; }
  * @param {number} offsetY - Vertical pixel offset from center.
  * @param {string} color - CSS color for the text layer.
  * @param {number} alpha - Global opacity to use while drawing.
+ * @param {string} [fontFamily='Times New Roman'] - Font family for the text.
  */
-function drawBase(text, offsetX, offsetY, color, alpha) {
+function drawBase(text, offsetX, offsetY, color, alpha, fontFamily = 'Times New Roman') {
   const { W, H } = dims;
   const cx = W / 2 + offsetX;
   // cy is fixed relative to BIG (not H) so top padding stays tight
@@ -72,7 +79,7 @@ function drawBase(text, offsetX, offsetY, color, alpha) {
 
   ctx.save();
   ctx.scale(1, 1.55);
-  ctx.font = `900 ${sharedBigSize}px "Times New Roman", serif`;
+  ctx.font = `900 ${sharedBigSize}px "${fontFamily}", serif`;
   ctx.fillStyle = color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -185,63 +192,34 @@ function drawGlitch(text, t, baseAlpha = 0.92) {
 }
 
 /**
- * Draw one frame of the idle state. The large serif text is the sole
- * visual focus — it gets a continuous low-level chromatic aberration
- * pulse (two offset colour ghosts) plus occasional random glitch slices
- * cut directly through the big text, so it never fully settles.
+ * Draw a single static frame: solid white background, big serif text
+ * on top, using whichever font is currently active in the cycle.
+ * @param {string} text
  */
-function renderIdleFrame(text) {
+function drawStaticFrame(text) {
   const { W, H } = dims;
-  const cx = W / 2;
-  const cy = Math.floor(BIG * 0.81);
-
   ctx.fillStyle = '#fff';
   ctx.fillRect(0, 0, W, H);
-
-  // Chromatic aberration pulse — two colour ghosts drift apart and back
-  const t     = idleFrame * 0.032;
-  const pulse = Math.sin(t) * 0.5 + 0.5;
-  const shift = Math.round(1.4 + pulse * 5.5);
-  const colA  = NEON[Math.floor(t * 0.4) % NEON.length];
-  const colB  = NEON[(Math.floor(t * 0.4) + 4) % NEON.length];
-  ctx.globalAlpha = 0.42;
-  drawBase(text, -shift, 0, colA, 1);
-  drawBase(text,  shift, 0, colB, 1);
-  ctx.globalAlpha = 1;
-
-  // Glitch slice cut through the big text (8% chance per frame)
-  if (Math.random() < 0.08) {
-    const sy  = cy - BIG * 0.75 + Math.random() * BIG * 1.5;
-    const sh  = 1 + Math.random() * 12;
-    const ox  = (Math.random() - 0.5) * 26;
-    const col = randNeon();
-    ctx.save();
-    ctx.beginPath(); ctx.rect(0, sy, W, sh); ctx.clip();
-    drawBase(text, ox, 0, col, 0.9);
-    ctx.restore();
-  }
-
-  // Main text — solid black, drawn on top for legibility
-  drawBase(text, 0, 0, '#000', 1);
+  drawBase(text, 0, 0, '#000', 1, FONTS[fontIdx]);
 }
 
 function stopIdleAnimation() {
-  if (idleAnimId) { cancelAnimationFrame(idleAnimId); idleAnimId = null; }
+  if (idleIntervalId) { clearInterval(idleIntervalId); idleIntervalId = null; }
 }
 
 /**
- * Start the continuous idle animation loop for the given text.
- * Cancels any previous idle loop first.
+ * Start the idle "font cycle": the text stays the same, but every
+ * IDLE_INTERVAL_MS the big text redraws in the next font family from
+ * `FONTS`. No glitch/chroma here — that's reserved for the click-triggered
+ * transition.
  */
 function renderIdle(text) {
   stopIdleAnimation();
-  idleFrame = 0;
-  function step() {
-    idleFrame++;
-    renderIdleFrame(text);
-    idleAnimId = requestAnimationFrame(step);
-  }
-  step();
+  drawStaticFrame(text);
+  idleIntervalId = setInterval(() => {
+    fontIdx = (fontIdx + 1) % FONTS.length;
+    drawStaticFrame(text);
+  }, IDLE_INTERVAL_MS);
 }
 
 /**
