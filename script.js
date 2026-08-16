@@ -408,6 +408,9 @@ function runIntro() {
       pctEl.style.transform = 'none';
       setTimeout(() => {
         overlay.classList.add('hide');
+        // Take the loading screen out of the page once it has faded, so its
+        // "100%" text never ends up in search snippets.
+        setTimeout(() => overlay.remove(), 400);
         renderIdle(states[0]);
       }, 150);
     }
