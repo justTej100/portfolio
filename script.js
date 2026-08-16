@@ -6,6 +6,12 @@
 const canvas = document.getElementById('nameCanvas');
 const ctx = canvas.getContext('2d');
 
+// Palette (matches style.css) and the same system UI font the report site uses.
+const BG   = '#111111';
+const TEXT = '#ffffff';
+const RED  = '#bd0b11';
+const FONT_STACK = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
+
 // `states`: array of name strings that the animation cycles through.
 // `idx`: current index into `states`.
 // `animId`: id returned from requestAnimationFrame for the active animation (or null).
@@ -19,19 +25,7 @@ let idx = 0;
 let animId       = null;
 let phase = 'idle';
 let frame = 0;
-const IDLE_INTERVAL_MS = 500;
 
-// `FONTS`: the idle animation cycles the big text through these font
-// families every IDLE_INTERVAL_MS, keeping the text itself unchanged.
-const FONTS = [
-  'Anton', 'Archivo Black', 'Bangers', 'Bebas Neue', 'Bungee', 'Bungee Shade',
-  'Creepster', 'Permanent Marker', 'Righteous', 'Rubik Mono One', 'Russo One',
-  'Special Elite', 'Staatliches', 'Teko', 'Titan One', 'Orbitron', 'Faster One',
-  'Monoton', 'Fjalla One', 'Alfa Slab One', 'Black Ops One', 'Chela One',
-  'Frijole', 'Nosifer', 'Rubik Glitch', 'Vast Shadow', 'Ultra', 'Shrikhand',
-  'Impact', 'Times New Roman'
-];
-let fontIdx = 0;
 const TOTAL_FRAMES = 60;
 const BIG = 188;
 
@@ -42,8 +36,12 @@ const BIG = 188;
 function initCanvas() {
   const W = Math.min(window.innerWidth - 16, 1100);
   const H = Math.floor(BIG * 1.30);
-  canvas.width = W;
-  canvas.height = H;
+  // Render at the screen's pixel density so the name stays sharp on phones and
+  // high-DPI laptops. All drawing code keeps using CSS-pixel coordinates.
+  const dpr = window.devicePixelRatio || 1;
+  canvas.width  = Math.round(W * dpr);
+  canvas.height = Math.round(H * dpr);
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   return { W, H };
 }
 
@@ -54,14 +52,14 @@ let dims = initCanvas();
 let sharedBigSize = BIG;
 function computeSharedBigSize() {
   const longestText = states.reduce((a, b) => a.length > b.length ? a : b);
-  ctx.font = `900 ${BIG}px "Times New Roman", serif`;
+  ctx.font = `900 ${BIG}px ${FONT_STACK}`;
   const measured = ctx.measureText(longestText).width;
   sharedBigSize = Math.floor(BIG * (dims.W * 0.97) / measured);
 }
 computeSharedBigSize();
 
-// ── Mob Psycho palette: stark black/white with a single red accent ──
-const NEON = ['#000000','#000000','#ffffff','#e24b4a','#000000','#ffffff','#e24b4a','#000000'];
+// ── Glitch palette: white text, page-colour 'erasers' and the red accent ──
+const NEON = [TEXT, TEXT, BG, RED, TEXT, BG, RED, TEXT];
 function randNeon() { return NEON[Math.floor(Math.random() * NEON.length)]; }
 
 /**
@@ -73,9 +71,8 @@ function randNeon() { return NEON[Math.floor(Math.random() * NEON.length)]; }
  * @param {number} offsetY - Vertical pixel offset from center.
  * @param {string} color - CSS color for the text layer.
  * @param {number} alpha - Global opacity to use while drawing.
- * @param {string} [fontFamily='Times New Roman'] - Font family for the text.
  */
-function drawBase(text, offsetX, offsetY, color, alpha, fontFamily = 'Times New Roman') {
+function drawBase(text, offsetX, offsetY, color, alpha) {
   const { W, H } = dims;
   const cx = W / 2 + offsetX;
   // cy is fixed relative to BIG (not H) so top padding stays tight
@@ -85,7 +82,7 @@ function drawBase(text, offsetX, offsetY, color, alpha, fontFamily = 'Times New 
 
   ctx.save();
   ctx.scale(1, 1.55);
-  ctx.font = `900 ${sharedBigSize}px "${fontFamily}", serif`;
+  ctx.font = `900 ${sharedBigSize}px ${FONT_STACK}`;
   ctx.fillStyle = color;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
@@ -166,10 +163,10 @@ function randomBolt(intensity) {
 
   const r = Math.random();
   let color, lw, blur;
-  if (r < 0.55)      { color = '#000000'; lw = 0.4 + Math.random() * 1.2; blur = 6 + Math.random() * 10; }
-  else if (r < 0.8)  { color = '#333333'; lw = 0.3 + Math.random() * 0.8; blur = 4 + Math.random() * 8; }
-  else if (r < 0.92) { color = '#111111'; lw = 1.0 + Math.random() * 2.0; blur = 14 + Math.random() * 20; }
-  else               { color = `rgba(200,0,0,${0.1 + Math.random() * 0.15})`; lw = 0.3 + Math.random() * 0.7; blur = 8; }
+  if (r < 0.55)      { color = '#ffffff'; lw = 0.4 + Math.random() * 1.2; blur = 6 + Math.random() * 10; }
+  else if (r < 0.8)  { color = '#9a9a9a'; lw = 0.3 + Math.random() * 0.8; blur = 4 + Math.random() * 8; }
+  else if (r < 0.92) { color = '#e6e6e6'; lw = 1.0 + Math.random() * 2.0; blur = 14 + Math.random() * 20; }
+  else               { color = `rgba(189,11,17,${0.25 + Math.random() * 0.25})`; lw = 0.3 + Math.random() * 0.7; blur = 8; }
 
   bolt(x1, y1, x2, y2, 70 + Math.random() * 80, color, lw * intensity, blur, 0);
 }
@@ -189,7 +186,7 @@ function drawGlitch(text, t, baseAlpha = 0.92) {
     const sh  = 1 + Math.random() * BIG * (0.06 + 0.34 * t);
     const ox  = (Math.random() - 0.5) * 72 * t;
     const oy  = (Math.random() - 0.5) * 7  * t;
-    const col = Math.random() < 0.75 ? randNeon() : '#000';
+    const col = Math.random() < 0.75 ? randNeon() : TEXT;
     ctx.save();
     ctx.beginPath(); ctx.rect(0, sy, W, sh); ctx.clip();
     drawBase(text, ox, oy, col, baseAlpha);
@@ -198,49 +195,23 @@ function drawGlitch(text, t, baseAlpha = 0.92) {
 }
 
 /**
- * Draw a single static frame: solid white background, big serif text
- * on top, using whichever font is currently active in the cycle.
+ * Draw a single static frame: dark background with the big name on top.
  * @param {string} text
  */
 function drawStaticFrame(text) {
   const { W, H } = dims;
-  ctx.fillStyle = '#fff';
+  ctx.fillStyle = BG;
   ctx.fillRect(0, 0, W, H);
-  drawBase(text, 0, 0, '#000', 1, FONTS[fontIdx]);
+  drawBase(text, 0, 0, TEXT, 1);
 }
 
-let idleMouseHandler = null;
-let idleLastMoveAt = 0;
-
-function stopIdleAnimation() {
-  if (idleMouseHandler) {
-    window.removeEventListener('mousemove', idleMouseHandler);
-    idleMouseHandler = null;
-  }
-}
-
-/**
- * Start the idle "font cycle": the text stays the same, and the font only
- * advances to the next entry in `FONTS` when the mouse moves — throttled
- * so it won't flip faster than once every IDLE_INTERVAL_MS. No glitch/chroma
- * here — that's reserved for the click-triggered transition.
- */
+/** Idle state: the name sits still until it is clicked. */
 function renderIdle(text) {
-  stopIdleAnimation();
   drawStaticFrame(text);
-  idleLastMoveAt = performance.now();
-  idleMouseHandler = () => {
-    const now = performance.now();
-    if (now - idleLastMoveAt < IDLE_INTERVAL_MS) return;
-    idleLastMoveAt = now;
-    fontIdx = (fontIdx + 1) % FONTS.length;
-    drawStaticFrame(text);
-  };
-  window.addEventListener('mousemove', idleMouseHandler);
 }
 
 /**
- * Absolutely unhinged neon glitch transition — white background, 8-colour
+ * Absolutely unhinged glitch transition — dark background, 8-colour
  * palette used across every effect simultaneously.
  *
  *  1. Neon background tint flash
@@ -261,8 +232,8 @@ function renderTransition(fromText, toText, progress) {
   const bellCu     = bellSq * bell;
   const activeText = progress < 0.5 ? fromText : toText;
 
-  // ── 1. White base + neon background tint at peak ──
-  ctx.fillStyle = '#fff';
+  // ── 1. Dark base + background tint at peak ──
+  ctx.fillStyle = BG;
   ctx.fillRect(0, 0, W, H);
   if (bell > 0.65) {
     ctx.globalAlpha = (bell - 0.65) / 0.35 * 0.15;
@@ -306,8 +277,8 @@ function renderTransition(fromText, toText, progress) {
   if (progress > 0.35) drawGlitch(toText, Math.min((progress - 0.35) / 0.52, 1) * 0.9, 0.90);
 
   // ── 5. fromText fading out / toText fading in ──
-  if (progress < 0.65) drawBase(fromText, 0, 0, '#000', 1 - Math.min(progress / 0.52, 1) * 0.94);
-  if (progress > 0.35) drawBase(toText,   0, 0, '#000', Math.min((progress - 0.35) / 0.52, 1));
+  if (progress < 0.65) drawBase(fromText, 0, 0, TEXT, 1 - Math.min(progress / 0.52, 1) * 0.94);
+  if (progress > 0.35) drawBase(toText,   0, 0, TEXT, Math.min((progress - 0.35) / 0.52, 1));
 
   // ── 6. Neon inversion strips (max 2) ──
   const numInvert = Math.floor(bellSq * 2);
@@ -315,10 +286,10 @@ function renderTransition(fromText, toText, progress) {
     const iy  = Math.random() * H;
     const ih  = BIG * (0.03 + Math.random() * 0.22);
     const ix  = (Math.random() - 0.5) * 24 * bell;
-    const col = randNeon();
+    const col = Math.random() < 0.5 ? BG : RED;
     ctx.save();
     ctx.beginPath(); ctx.rect(0, iy, W, ih); ctx.clip();
-    ctx.fillStyle = '#0a0a0a'; ctx.fillRect(0, iy, W, ih);
+    ctx.fillStyle = TEXT; ctx.fillRect(0, iy, W, ih);
     drawBase(activeText, ix, 0, col, 0.96);
     ctx.restore();
   }
@@ -329,10 +300,10 @@ function renderTransition(fromText, toText, progress) {
     const barY = Math.random() * H;
     const barH = BIG * (0.04 + Math.random() * 0.30);
     const barX = (Math.random() - 0.5) * W * 0.17 * bell;
-    const col  = Math.random() < 0.7 ? randNeon() : '#000';
+    const col  = Math.random() < 0.7 ? randNeon() : TEXT;
     ctx.save();
     ctx.beginPath(); ctx.rect(0, barY, W, barH); ctx.clip();
-    ctx.fillStyle = '#fff'; ctx.fillRect(0, barY, W, barH);
+    ctx.fillStyle = BG; ctx.fillRect(0, barY, W, barH);
     drawBase(activeText, barX, 0, col, 0.82);
     ctx.restore();
   }
@@ -376,7 +347,6 @@ function renderTransition(fromText, toText, progress) {
  */
 function triggerName() {
   if (phase === 'transitioning') return;
-  stopIdleAnimation();
   const fromText = states[idx];
   idx = (idx + 1) % states.length;
   const toText = states[idx];
@@ -401,7 +371,7 @@ function triggerName() {
 window.addEventListener('resize', () => {
   dims = initCanvas();
   computeSharedBigSize();
-  if (phase === 'idle') { stopIdleAnimation(); renderIdle(states[idx]); }
+  if (phase === 'idle') renderIdle(states[idx]);
 });
 
 /**
@@ -445,6 +415,4 @@ function runIntro() {
   requestAnimationFrame(frame);
 }
 
-Promise.all(FONTS.map(f => document.fonts.load(`900 100px "${f}"`)))
-  .catch(() => {})
-  .finally(runIntro);
+runIntro();

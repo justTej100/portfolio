@@ -1,23 +1,21 @@
-@import url(//fonts.googleapis.com/css?family=Lato:300:400);
-
-/* Drop your downloaded Mob Psycho lookalike font file in /fonts and point
-   this at it. Falls back to Anton (loaded in index.html) until you do. */
-@font-face {
-  font-family: 'MobPsycho';
-  src: url('fonts/mob100.woff2') format('woff2'),
-       url('fonts/mob100.ttf') format('truetype');
-  font-display: swap;
-}
-
+/* Palette sampled from the reference screenshot */
 :root {
-  --mob-font: 'MobPsycho', 'Anton', Impact, sans-serif;
+  --bg:    #111111;   /* page background */
+  --deep:  #0b0b0b;   /* darker panels, intro screen, wave floor */
+  --red:   #bd0b11;   /* accent */
+  --text:  #ffffff;
+  --muted: #8a8a8a;
+  --line:  #222222;
+  /* Same system UI font stack the report site uses */
+  --font: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+  color-scheme: dark;
 }
 
 /* ── Startup power-meter overlay ── */
 #introOverlay {
   position: fixed;
   inset: 0;
-  background: #000;
+  background: var(--deep);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -32,9 +30,10 @@
 }
 
 #introPct {
-  font-family: var(--mob-font);
+  font-family: var(--font);
+  font-weight: 800;
   font-size: clamp(64px, 18vw, 160px);
-  color: #fff;
+  color: var(--text);
   letter-spacing: 2px;
   line-height: 1;
 }
@@ -42,6 +41,7 @@
 #introPctSign {
   font-size: 0.5em;
   margin-left: 4px;
+  color: var(--red);
 }
 
 html {
@@ -51,7 +51,8 @@ html {
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font);
+  color: var(--text);
   height: 100%;
   width: 100%;
   margin: 0;
@@ -59,7 +60,7 @@ body {
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  background: #fff;
+  background: var(--bg);
 }
 
 main {
@@ -97,17 +98,19 @@ main {
 button {
   margin-left: 10px;
   padding: 0.8em 2em;
-  border: 2px solid #000;
+  border: 2px solid var(--text);
   position: relative;
   overflow: hidden;
   background-color: transparent;
   text-align: center;
   text-transform: uppercase;
   font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   transition: .3s;
   z-index: 1;
   font-family: inherit;
-  color: #000;
+  color: var(--text);
   cursor: pointer;
 }
 
@@ -119,7 +122,7 @@ button::before {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%) rotate(45deg);
-  background: #000;
+  background: var(--red);
   transition: .5s ease;
   display: block;
   z-index: -1;
@@ -130,7 +133,42 @@ button:hover::before {
 }
 
 button:hover {
-  color: #fff;
+  color: var(--text);
+  border-color: var(--red);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--red);
+  outline-offset: 3px;
+}
+
+/* ── GitHub profile picture badge ── */
+#ghAvatar {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 50;
+  display: block;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid var(--red);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, .6);
+  transition: transform .2s ease, border-color .2s ease;
+}
+
+#ghAvatar:hover,
+#ghAvatar:focus-visible {
+  transform: scale(1.08);
+  border-color: var(--text);
+}
+
+#ghAvatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 /* ── Waves ── */
@@ -154,6 +192,12 @@ button:hover {
   top: 0;
   width: 100%;
 }
+
+/* Wave colours (CSS overrides the fill attributes in index.html) */
+.parallax > use:nth-child(1) { fill: rgba(189, 11, 17, 0.7); }
+.parallax > use:nth-child(2) { fill: rgba(189, 11, 17, 0.5); }
+.parallax > use:nth-child(3) { fill: rgba(189, 11, 17, 0.3); }
+.parallax > use:nth-child(4) { fill: var(--deep); }
 
 /* ── Wave animation ── */
 .parallax > use {
@@ -187,7 +231,15 @@ button:hover {
     height: 40px;
     min-height: 40px;
   }
-  h1 {
-    font-size: 24px;
+  .buttonC {
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 0 8px;
+  }
+  button {
+    margin-left: 0;
+    flex: 1 1 calc(50% - 8px);
+    padding: 0.9em 0.5em;
+    font-size: 14px;
   }
 }
