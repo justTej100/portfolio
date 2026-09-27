@@ -1,7 +1,7 @@
 /* Palette sampled from the reference screenshot */
 :root {
   --bg:    #111111;   /* page background */
-  --deep:  #0b0b0b;   /* nav bar, cards, intro screen */
+  --deep:  #0b0b0b;   /* nav bar and cards */
   --red:   #bd0b11;   /* accent */
   --text:  #ffffff;
   --soft:  #e2e2e2;   /* body copy */
@@ -44,30 +44,6 @@ body {
   white-space: nowrap;
   border: 0;
 }
-
-/* ── Startup power-meter overlay ── */
-#introOverlay {
-  position: fixed;
-  inset: 0;
-  background: var(--deep);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 9999;
-  transition: opacity 0.25s ease, visibility 0.25s ease;
-}
-#introOverlay.hide { opacity: 0; visibility: hidden; pointer-events: none; }
-.intro-seen #introOverlay { display: none; }
-
-#introPct {
-  font-family: var(--font);
-  font-weight: 800;
-  font-size: clamp(64px, 18vw, 160px);
-  color: var(--text);
-  letter-spacing: 2px;
-  line-height: 1;
-}
-#introPctSign { font-size: 0.5em; margin-left: 4px; color: var(--red); }
 
 /* ── Top navigation bar ── */
 .topbar {
@@ -114,7 +90,7 @@ body {
 }
 
 .hero {
-  --pfp: clamp(150px, 26vw, 280px);   /* script.js sets this so the photo matches the name's height */
+  --pfp: clamp(195px, 33.8vw, 364px);   /* 30% above the name-matched size; script.js sets the exact value */
   --gap: clamp(24px, 5vw, 64px);
   display: grid;
   grid-template-columns: minmax(0, 1fr) var(--pfp);
@@ -251,7 +227,7 @@ body {
   .tabs a { padding: 16px 10px 13px; font-size: 12px; letter-spacing: 0.04em; }
   .hero-wrap { align-items: flex-start; padding-top: 28px; }
   .hero {
-    --pfp: min(64vw, 260px);
+    --pfp: min(83.2vw, 338px);
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas:
       "name"

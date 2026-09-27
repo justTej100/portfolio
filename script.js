@@ -50,8 +50,7 @@ function measure(text) {
 
 /**
  * Work out the layout, size the canvas and pre-render the white name.
- * Side by side, the photo is sized so its top lines up with the top of the
- * name and its bottom lines up with the baseline of the second line.
+ * Side by side, the photo starts at the name's height, then is drawn 30% larger.
  */
 function setup() {
   const dpr = window.devicePixelRatio || 1;
@@ -63,11 +62,12 @@ function setup() {
 
   let pfp = 0;
   if (sideBySide) {
-    // Solve  photo = name height  where  name width = row width - gap - photo.
+    // Photo matches the name height, then grows 30%. Caps scale with that.
     const rowW = hero.clientWidth;
     const gap  = parseFloat(getComputedStyle(hero).columnGap) || 0;
     const a    = inkR / inkW;
-    pfp = Math.min(340, Math.max(140, a * (rowW - gap) / (1 + a)));
+    const matched = a * (rowW - gap) / (1 + a);
+    pfp = Math.min(442, Math.max(182, matched * 1.3));
     hero.style.setProperty('--pfp', pfp.toFixed(1) + 'px');
   } else {
     hero.style.removeProperty('--pfp');           // phones use the CSS size
@@ -172,53 +172,3 @@ if ('ResizeObserver' in window) {
     if (hero.clientWidth !== lastWidth) { setup(); start(); }
   }).observe(hero);
 }
-
-/**
- * Startup power-meter: a count-up (0 to 100%) that climbs fast then jitters
- * at the end, before the overlay fades out. It plays once per browser session,
- * so moving around the site through the nav bar never replays it.
- */
-function runIntro() {
-  const overlay = document.getElementById('introOverlay');
-  const pctEl   = document.getElementById('introPct');
-  if (!overlay || !pctEl) return;
-
-  try {
-    if (sessionStorage.getItem('introSeen')) { overlay.remove(); return; }
-    sessionStorage.setItem('introSeen', '1');
-  } catch (e) { /* storage unavailable, just play it */ }
-
-  const duration = 900;
-  const startTime = performance.now();
-
-  function step(now) {
-    const t = Math.max(0, Math.min(1, (now - startTime) / duration));
-    const rampT = t < 0.85 ? t / 0.85 : 1;
-    let val = Math.round(rampT * 100);
-    if (t > 0.85 && t < 1) {
-      val = 100 + Math.round(Math.sin(t * 60) * (1 - t) * 8);
-    }
-    pctEl.firstChild.textContent = val;
-
-    const settle = t < 0.85 ? t : (1 - (t - 0.85) / 0.15);
-    const shakeX = (Math.random() - 0.5) * 4 * settle;
-    const shakeY = (Math.random() - 0.5) * 2.4 * settle;
-    pctEl.style.transform = `translate(${shakeX.toFixed(1)}px, ${shakeY.toFixed(1)}px)`;
-
-    if (t < 1) {
-      requestAnimationFrame(step);
-    } else {
-      pctEl.firstChild.textContent = '100';
-      pctEl.style.transform = 'none';
-      setTimeout(() => {
-        overlay.classList.add('hide');
-        // Take the loading screen out of the page once it has faded, so its
-        // "100%" text never ends up in search snippets.
-        setTimeout(() => overlay.remove(), 400);
-      }, 150);
-    }
-  }
-  requestAnimationFrame(step);
-}
-
-runIntro();
