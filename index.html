@@ -5,18 +5,18 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0b0b0b">
 <meta name="color-scheme" content="dark">
-<link rel="stylesheet" type="text/css" href="style.css">
-<title>Tejinder Tj Bajaj | Portfolio</title>
-<meta name="description" content="Personal portfolio of Tejinder Tj Bajaj, with links to GitHub (justTej100) and LinkedIn.">
+<link rel="stylesheet" href="style.css">
+<title>Tejinder (TJ) Bajaj | Portfolio</title>
+<meta name="description" content="Personal portfolio of Tejinder (TJ) Bajaj, who is interested in software, machine learning, and reinforcement learning (RL).">
 <meta name="author" content="Tejinder Bajaj">
 <meta name="robots" content="index, follow, max-image-preview:large">
 <link rel="canonical" href="https://justtej100.github.io/portfolio/">
 
 <!-- Open Graph / Twitter link previews -->
 <meta property="og:type" content="website">
-<meta property="og:site_name" content="Tejinder Tj Bajaj">
-<meta property="og:title" content="Tejinder Tj Bajaj | Portfolio">
-<meta property="og:description" content="Personal portfolio of Tejinder (TJ) Bajaj, with links to GitHub (justTej100) and LinkedIn.">
+<meta property="og:site_name" content="Tejinder (TJ) Bajaj">
+<meta property="og:title" content="Tejinder (TJ) Bajaj | Portfolio">
+<meta property="og:description" content="Personal portfolio of Tejinder (TJ) Bajaj, who is interested in software, machine learning, and reinforcement learning (RL).">
 <meta property="og:url" content="https://justtej100.github.io/portfolio/">
 <meta property="og:image" content="https://justtej100.github.io/portfolio/og-image.png">
 <meta property="og:image:width" content="1200">
@@ -24,7 +24,7 @@
 <meta property="og:image:alt" content="Tejinder TJ Bajaj portfolio. The name is filled with flowing red waves on a black background.">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Tejinder (TJ) Bajaj | Portfolio">
-<meta name="twitter:description" content="Personal portfolio of Tejinder (TJ) Bajaj, with links to GitHub (justTej100) and LinkedIn.">
+<meta name="twitter:description" content="Personal portfolio of Tejinder (TJ) Bajaj, who is interested in software, machine learning, and reinforcement learning (RL).">
 <meta name="twitter:image" content="https://justtej100.github.io/portfolio/og-image.png">
 
 <!-- Structured data so search engines and AI tools know who this page is about -->
@@ -36,7 +36,7 @@
       "@type": "WebSite",
       "@id": "https://justtej100.github.io/portfolio/#website",
       "url": "https://justtej100.github.io/portfolio/",
-      "name": "Tejinder Tj Bajaj",
+      "name": "Tejinder (TJ) Bajaj",
       "inLanguage": "en",
       "publisher": {
         "@id": "https://justtej100.github.io/portfolio/#person"
@@ -47,12 +47,18 @@
       "@id": "https://justtej100.github.io/portfolio/#person",
       "name": "Tejinder Bajaj",
       "alternateName": [
-        "Tj Bajaj",
-        "Tejinder Tj Bajaj",
+        "TJ Bajaj",
+        "Tejinder TJ Bajaj",
         "justTej100"
       ],
       "url": "https://justtej100.github.io/portfolio/",
       "image": "https://avatars.githubusercontent.com/u/181138594?v=4",
+      "description": "Interested in software, machine learning, and reinforcement learning.",
+      "knowsAbout": [
+        "Software",
+        "Machine learning",
+        "Reinforcement learning"
+      ],
       "sameAs": [
         "https://github.com/justTej100",
         "https://www.linkedin.com/in/tejindertjbajaj"
@@ -60,82 +66,60 @@
       "mainEntityOfPage": {
         "@id": "https://justtej100.github.io/portfolio/#website"
       }
+    },
+    {
+      "@type": "WebPage",
+      "@id": "https://justtej100.github.io/portfolio/#webpage",
+      "url": "https://justtej100.github.io/portfolio/",
+      "name": "Tejinder (TJ) Bajaj | Portfolio",
+      "isPartOf": {
+        "@id": "https://justtej100.github.io/portfolio/#website"
+      },
+      "about": {
+        "@id": "https://justtej100.github.io/portfolio/#person"
+      }
     }
   ]
 }
 </script>
 
-<!-- Without JavaScript, skip the loading screen and show the name as plain text -->
-<noscript><style>#introOverlay{display:none}.sr-only{position:static;width:auto;height:auto;margin:45vh 16px 0;clip:auto;overflow:visible;text-align:center;font-size:clamp(28px,8vw,64px)}</style></noscript>
-
+<!-- Tab icon: GitHub profile picture. The square link is the fallback and icon.js swaps in a circular crop. -->
 <link rel="icon" id="site-icon" href="https://avatars.githubusercontent.com/u/181138594?v=4&amp;s=64">
 <link rel="apple-touch-icon" href="https://avatars.githubusercontent.com/u/181138594?v=4&amp;s=180">
-<!-- Tab icon: GitHub profile picture. The square link is the fallback. The script below
-     upgrades it to a circular crop. It uses its own image size (s=96) so it never shares a
-     cache entry with the other avatar requests on the page, and it retries once on failure. -->
-<script>
-(function(){
-  var BASE='https://avatars.githubusercontent.com/u/181138594?v=4';
-  function swap(url){
-    var old=document.getElementById('site-icon'),l=document.createElement('link');
-    l.rel='icon';l.type='image/png';l.sizes='64x64';l.id='site-icon';l.href=url;
-    if(old&&old.parentNode)old.parentNode.removeChild(old);
-    document.head.appendChild(l);
-  }
-  function circle(img){
-    var n=64,c=document.createElement('canvas');c.width=c.height=n;
-    var x=c.getContext('2d');
-    x.beginPath();x.arc(n/2,n/2,n/2,0,Math.PI*2);x.closePath();x.clip();
-    x.drawImage(img,0,0,n,n);
-    return c.toDataURL('image/png');
-  }
-  function load(src,retry){
-    var img=new Image();img.crossOrigin='anonymous';
-    img.onload=function(){
-      try{swap(circle(img));console.info('[icon] circular icon applied');}
-      catch(e){console.info('[icon] canvas blocked, keeping square icon');}
-    };
-    img.onerror=function(){
-      if(retry){console.info('[icon] first load failed, retrying');load(src+'&r='+Date.now(),false);}
-      else console.info('[icon] avatar unreadable, keeping square icon');
-    };
-    img.src=src;
-  }
-  load(BASE+'&s=96',true);
-})();
-</script>
-
+<script src="icon.js" defer></script>
+<!-- Skip the loading screen for repeat visits in the same session -->
+<script>try{if(sessionStorage.getItem('introSeen'))document.documentElement.className+=' intro-seen'}catch(e){}</script>
+<!-- Without JavaScript, skip the loading screen and show the name as plain text -->
+<noscript><style>#introOverlay{display:none}#nameCanvas{display:none}.sr-only{position:static;width:auto;height:auto;margin:0 0 12px;clip:auto;overflow:visible;font-size:clamp(36px,8vw,72px);line-height:1.05;font-weight:800}</style></noscript>
 </head>
 <body>
-
 <div id="introOverlay" aria-hidden="true" data-nosnippet>
 <div id="introPct">0<span id="introPctSign">%</span></div>
 </div>
 
-<nav class="social" aria-label="Social links">
-<a id="liLink" href="https://www.linkedin.com/in/tejindertjbajaj" target="_blank" rel="me noopener"
-   aria-label="Tejinder Tj Bajaj on LinkedIn" title="LinkedIn"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
-<a id="ghAvatar" href="https://github.com/justTej100" target="_blank" rel="me noopener"
-   aria-label="justTej100 on GitHub" title="GitHub">
-<img src="https://avatars.githubusercontent.com/u/181138594?v=4&s=128" width="48" height="48"
-     alt="justTej100 GitHub profile picture" onerror="this.parentNode.style.display='none'">
-</a>
-</nav>
+<header class="topbar"><div class="wrap"><nav class="tabs" aria-label="Main">
+<a href="./" aria-current="page">Tejinder Tj Bajaj</a>
+<a href="projects/">Projects</a>
+<a href="experience/">Experience</a>
+<a href="resume/">Resume</a>
+</nav></div></header>
 
-<main>
+<main class="hero-wrap">
+<div class="wrap">
 <h1 class="sr-only">Tejinder (TJ) Bajaj</h1>
-<div class="tejinder">
-<canvas id="nameCanvas" aria-hidden="true"></canvas>
-<div class="buttonC">
-<button>About</button>
-<button>Work EXP</button>
-<button>Resume</button>
-<button>Contact</button>
-</div>
+<section class="hero" id="hero" aria-label="Introduction">
+<div class="hero-name" id="nameCell"><canvas id="nameCanvas" aria-hidden="true"></canvas></div>
+<div class="hero-photo" id="heroPhoto"><span aria-hidden="true">T</span>
+<img src="https://avatars.githubusercontent.com/u/181138594?v=4&amp;s=480" alt="Tejinder's GitHub profile picture" width="280" height="280" onerror="this.remove()"></div>
+<p class="hero-intro">Hi, I'm Tejinder. I go by Tj sometimes. I'm interested in software, machine learning, and RL.</p>
+<nav class="hero-social" aria-label="Social links">
+<a class="icon-link" href="https://www.linkedin.com/in/tejindertjbajaj" target="_blank" rel="me noopener" aria-label="Tejinder TJ Bajaj on LinkedIn" title="LinkedIn"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path fill="currentColor" d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
+<a class="icon-link" href="https://github.com/justTej100" target="_blank" rel="me noopener" aria-label="justTej100 on GitHub" title="GitHub"><svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg></a>
+</nav>
+</section>
 </div>
 </main>
 
 <script src="script.js"></script>
-
 </body>
 </html>

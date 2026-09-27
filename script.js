@@ -1,21 +1,24 @@
-/* ── Name canvas: red waves flowing inside the letters ── */
+/* ── Home screen: wave-filled name next to the GitHub picture ── */
 
-const canvas = document.getElementById('nameCanvas');
-const ctx = canvas.getContext('2d');
+const hero     = document.getElementById('hero');
+const nameCell = document.getElementById('nameCell');
+const canvas   = document.getElementById('nameCanvas');
+const ctx      = canvas.getContext('2d');
 
 // Palette (matches style.css) and the same system UI font the report site uses.
 const TEXT = '#ffffff';
 const RED  = '#bd0b11';
 const FONT_STACK = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif';
 
-const NAME    = 'TEJINDER TJ BAJAJ';
-const BIG     = 188;    // base font size before the name is fitted to the screen
-const STRETCH = 1.55;   // vertical stretch that gives the tall, narrow look
+const LINES = ['Tejinder', 'Tj Bajaj'];
+const PAD   = 4;     // must match .hero-photo margin-top in style.css
+const REF   = 100;   // reference font size used for measuring
+const PITCH = 1.05;  // distance between the two baselines, in font sizes
 
 /*
- * Wave layers, back to front. These mirror the four layers of the old page waves.
- *   level  - where the surface sits, as a fraction of the letter height from the top
- *   amp    - wave height, as a fraction of the letter height
+ * Wave layers, back to front, applied to each line of the name.
+ *   level  - where the surface sits, as a fraction of the line's height from its top
+ *   amp    - wave height, as a fraction of the line's height
  *   len    - wavelength, as a fraction of the canvas width
  *   period - milliseconds for one wavelength to travel past (7s, 10s, 13s, 20s)
  */
@@ -32,41 +35,83 @@ const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const mask = document.createElement('canvas');
 const mctx = mask.getContext('2d');
 
-let W = 0, H = 0, textTop = 0, textHeight = 0, rafId = null;
+let W = 0, H = 0, lines = [], bands = [], rafId = null, lastWidth = 0;
 
-/** Size the canvas for the screen and pre-render the white name mask. */
+function measure(text) {
+  mctx.font = `900 ${REF}px ${FONT_STACK}`;
+  const m = mctx.measureText(text);
+  return {
+    left:  m.actualBoundingBoxLeft,
+    right: m.actualBoundingBoxRight,
+    asc:   m.actualBoundingBoxAscent,
+    desc:  m.actualBoundingBoxDescent
+  };
+}
+
+/**
+ * Work out the layout, size the canvas and pre-render the white name.
+ * Side by side, the photo is sized so its top lines up with the top of the
+ * name and its bottom lines up with the baseline of the second line.
+ */
 function setup() {
-  W = Math.min(window.innerWidth - 16, 1100);
-  H = Math.floor(BIG * 1.30);
+  const dpr = window.devicePixelRatio || 1;
+  const sideBySide = window.matchMedia('(min-width: 760px)').matches;
+
+  const m    = LINES.map(measure);
+  const inkW = Math.max(...m.map(x => x.left + x.right));
+  const inkR = m[0].asc + PITCH * REF;            // top of line 1 down to baseline of line 2
+
+  let pfp = 0;
+  if (sideBySide) {
+    // Solve  photo = name height  where  name width = row width - gap - photo.
+    const rowW = hero.clientWidth;
+    const gap  = parseFloat(getComputedStyle(hero).columnGap) || 0;
+    const a    = inkR / inkW;
+    pfp = Math.min(340, Math.max(140, a * (rowW - gap) / (1 + a)));
+    hero.style.setProperty('--pfp', pfp.toFixed(1) + 'px');
+  } else {
+    hero.style.removeProperty('--pfp');           // phones use the CSS size
+  }
+
+  W = Math.floor(nameCell.clientWidth);
+  let k = (W - 2) / inkW;
+  k = sideBySide ? Math.min(k, pfp / inkR) : Math.min(k, 1.6);
+  const size = REF * k;
+
+  const asc   = m.map(x => x.asc  * k);
+  const desc  = m.map(x => x.desc * k);
+  const pitch = PITCH * REF * k;
+  const inkH  = asc[0] + pitch;
+  const boxH  = sideBySide ? Math.max(pfp, inkH) : inkH;
+  const base1 = PAD + (boxH - inkH) / 2 + asc[0];
+  const base2 = base1 + pitch;
+  H = Math.ceil(PAD + boxH + desc[1] + PAD);
+
+  lines = LINES.map((text, i) => {
+    const base = i === 0 ? base1 : base2;
+    return { text, x: m[i].left * k + 1, base, top: base - asc[i], bot: base + desc[i] };
+  });
+  const mid = (lines[0].bot + lines[1].top) / 2;
+  bands = [[0, mid], [mid, H]];
 
   // Render at the screen's pixel density so the name stays sharp.
-  const dpr = window.devicePixelRatio || 1;
   for (const c of [canvas, mask]) {
     c.width  = Math.round(W * dpr);
     c.height = Math.round(H * dpr);
   }
+  canvas.style.width  = W + 'px';
+  canvas.style.height = H + 'px';
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   mctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
-  // Fit the name to 97% of the width.
-  mctx.font = `900 ${BIG}px ${FONT_STACK}`;
-  const size = Math.floor(BIG * (W * 0.97) / mctx.measureText(NAME).width);
-
-  const cy = Math.floor(BIG * 0.81);
   mctx.clearRect(0, 0, W, H);
-  mctx.save();
-  mctx.scale(1, STRETCH);
   mctx.font = `900 ${size}px ${FONT_STACK}`;
   mctx.fillStyle = TEXT;
-  mctx.textAlign = 'center';
-  mctx.textBaseline = 'middle';
-  const m = mctx.measureText(NAME);
-  mctx.fillText(NAME, W / 2, cy / STRETCH);
-  mctx.restore();
+  mctx.textAlign = 'left';
+  mctx.textBaseline = 'alphabetic';
+  for (const ln of lines) mctx.fillText(ln.text, ln.x, ln.base);
 
-  // Vertical extent of the letters, so the waves are positioned relative to them.
-  textTop    = cy - m.actualBoundingBoxAscent * STRETCH;
-  textHeight = (m.actualBoundingBoxAscent + m.actualBoundingBoxDescent) * STRETCH;
+  lastWidth = hero.clientWidth;
 }
 
 /** Paint one frame. `now` is a time in milliseconds. */
@@ -78,20 +123,28 @@ function drawFrame(now) {
   // 'source-atop' paints only where the name already exists, so the waves
   // show up inside the letters and nowhere else.
   ctx.globalCompositeOperation = 'source-atop';
-  for (const L of LAYERS) {
-    const wavelength = L.len * W;
-    const phase = (now / L.period) * Math.PI * 2;
-    ctx.fillStyle = L.color;
+  lines.forEach((ln, i) => {
+    const h = ln.bot - ln.top;
+    ctx.save();
     ctx.beginPath();
-    ctx.moveTo(0, H);
-    for (let x = 0; x <= W + 3; x += 3) {
-      const y = textTop + textHeight * (L.level + L.amp * Math.sin((x / wavelength) * Math.PI * 2 - phase));
-      ctx.lineTo(x, y);
+    ctx.rect(0, bands[i][0], W, bands[i][1] - bands[i][0]);
+    ctx.clip();
+    for (const L of LAYERS) {
+      const wavelength = L.len * W;
+      const phase = (now / L.period) * Math.PI * 2;
+      ctx.fillStyle = L.color;
+      ctx.beginPath();
+      ctx.moveTo(0, ln.bot + 4);
+      for (let x = 0; x <= W + 3; x += 3) {
+        const y = ln.top + h * (L.level + L.amp * Math.sin((x / wavelength) * Math.PI * 2 - phase));
+        ctx.lineTo(x, y);
+      }
+      ctx.lineTo(W, ln.bot + 4);
+      ctx.closePath();
+      ctx.fill();
     }
-    ctx.lineTo(W, H);
-    ctx.closePath();
-    ctx.fill();
-  }
+    ctx.restore();
+  });
   ctx.globalCompositeOperation = 'source-over';
 }
 
@@ -113,14 +166,27 @@ start();
 window.addEventListener('resize', () => { setup(); start(); });
 reduceMotion.addEventListener('change', start);
 
+// A scrollbar can appear after the first layout and change the width, so re-fit if it does.
+if ('ResizeObserver' in window) {
+  new ResizeObserver(() => {
+    if (hero.clientWidth !== lastWidth) { setup(); start(); }
+  }).observe(hero);
+}
+
 /**
  * Startup power-meter: a count-up (0 to 100%) that climbs fast then jitters
- * at the end, before the overlay fades out to reveal the name.
+ * at the end, before the overlay fades out. It plays once per browser session,
+ * so moving around the site through the nav bar never replays it.
  */
 function runIntro() {
   const overlay = document.getElementById('introOverlay');
   const pctEl   = document.getElementById('introPct');
   if (!overlay || !pctEl) return;
+
+  try {
+    if (sessionStorage.getItem('introSeen')) { overlay.remove(); return; }
+    sessionStorage.setItem('introSeen', '1');
+  } catch (e) { /* storage unavailable, just play it */ }
 
   const duration = 900;
   const startTime = performance.now();
